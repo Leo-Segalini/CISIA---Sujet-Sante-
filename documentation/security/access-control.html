@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Accès et sécurité — CISIA Santé</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="Navigation documentation">
+      <a href="../index.html">Accueil</a>
+      <a href="../features/fondation-donnees.html">Fondation données</a>
+      <a href="access-control.html" aria-current="page">Accès et sécurité</a>
+    </nav>
+    <main>
+      <h1>Politique d’accès (chantier fondation)</h1>
+      <p>Données de santé synthétiques, traitées comme sensibles (article 9 RGPD, secret médical pédagogique).</p>
+      <table>
+        <thead>
+          <tr><th>Zone</th><th>Contenu</th><th>Git</th><th>Modèle</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Coffre</td><td>NomPrenom, PersonneAPrevenir</td><td>non</td><td>jamais</td></tr>
+          <tr><td>Curated</td><td>Features pseudonymisées</td><td>non</td><td>oui (chantier ML)</td></tr>
+          <tr><td>Registre</td><td>Métadonnées de colonnes</td><td>oui</td><td>n/a</td></tr>
+        </tbody>
+      </table>
+      <p>Aucun appel réseau dans le code. Aucun modèle en ligne. Ne pas pousser les CSV nominatifs vers un dépôt public.</p>
+    </main>
+  </div>
+</body>
+</html>

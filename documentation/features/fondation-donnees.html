@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fondation données — CISIA Santé</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="Navigation documentation">
+      <a href="../index.html">Accueil</a>
+      <a href="fondation-donnees.html" aria-current="page">Fondation données</a>
+      <a href="../security/access-control.html">Accès et sécurité</a>
+    </nav>
+    <main>
+      <h1>Fondation données</h1>
+      <p>Version 0.1 — 2026-08-24</p>
+      <h2>Objectif</h2>
+      <p>Auditer les 11 CSV, séparer le nominatif, construire deux jeux de features (score sortie / score télésurveillance) sans fuite temporelle.</p>
+      <h2>Arborescence</h2>
+      <ul>
+        <li><code>data/raw</code> — copies locales (hors git)</li>
+        <li><code>data/vault_identite</code> — coffre nominatif (hors git)</li>
+        <li><code>data/pseudonymise</code> — tables de travail</li>
+        <li><code>data/curated</code> — parquets de features</li>
+      </ul>
+      <h2>Anti-fuite</h2>
+      <ul>
+        <li>Split par <code>PatientID</code></li>
+        <li>Score sortie : horodatage ≤ date de sortie ; pas d’objets connectés</li>
+        <li>Score télé : fenêtre fixe de 7 jours, mesures <code>QualiteSignal = Bon</code> uniquement</li>
+      </ul>
+      <h2>Lancer</h2>
+      <pre><code>python3.13 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+PYTHONPATH=. python scripts/run_pipeline.py
+PYTHONPATH=. pytest -v</code></pre>
+    </main>
+  </div>
+</body>
+</html>
