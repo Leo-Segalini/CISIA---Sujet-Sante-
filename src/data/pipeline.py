@@ -18,11 +18,13 @@ from src.data.quality import (
     recalculate_duree_sejour,
 )
 from src.data.registre import (
+    assert_complements_insee_enregistres,
     assert_justifications,
     assert_registre_covers_sources,
     build_source_column_index,
     load_registre,
 )
+from src.data.territoire import write_complements
 
 
 def run_pipeline(paths: ProjectPaths, *, horizon_tele: int = 7) -> dict[str, Path]:
@@ -36,10 +38,16 @@ def run_pipeline(paths: ProjectPaths, *, horizon_tele: int = 7) -> dict[str, Pat
             continue
         shutil.copy2(paths.raw / name, paths.pseudonymise / name)
 
+    territoire_sujet = load_csv(paths, "territoire_insee.csv")
+    write_complements(paths, territoire_sujet)
+    # Features ML : fichier sujet uniquement (modèle déjà entraîné).
+    # Les compléments INSEE sont exposés dans la webapp / le registre.
+    territoire = territoire_sujet
     registre = load_registre(paths.registres / "registre_colonnes.csv")
     index = build_source_column_index(paths)
     assert_registre_covers_sources(registre, index)
     assert_justifications(registre)
+    assert_complements_insee_enregistres(registre, paths)
 
     sejours = recalculate_duree_sejour(load_csv(paths, "sejours.csv"))
     sejours_el = patient_level_split(filter_domicile(sejours))
@@ -49,7 +57,6 @@ def run_pipeline(paths: ProjectPaths, *, horizon_tele: int = 7) -> dict[str, Pat
     diagnostics = load_csv(paths, "diagnostics.csv")
     actes = load_csv(paths, "actes.csv")
     medications = load_csv(paths, "medications.csv")
-    territoire = load_csv(paths, "territoire_insee.csv")
     objets = filter_objets_connectes_bons(load_csv(paths, "objets_connectes.csv"))
 
     features_sortie = build_features_score_sortie(

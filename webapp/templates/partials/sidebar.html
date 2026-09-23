@@ -1,0 +1,148 @@
+{% set p = parcours|default('hub') %}
+{% set path = request.url.path %}
+<aside class="sidebar" id="sidebar" aria-label="Navigation principale">
+  <div class="sidebar-brand">
+    <img class="sidebar-brand-logo" src="/static/assets/cisia-logo.png" alt="" width="512" height="512" decoding="async">
+    <span class="sidebar-brand-name">
+      {% if p == 'cisia' %}CISIA Readmit{% else %}CISIA Flow{% endif %}
+    </span>
+    <button type="button" class="sidebar-toggle-btn" data-sidebar-toggle
+            aria-controls="sidebar" aria-expanded="true"
+            aria-label="Réduire le menu">
+      <span class="material-symbols-outlined sidebar-toggle-icon" aria-hidden="true">chevron_left</span>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    {% if p == 'cisia' %}
+    <div class="sidebar-section">
+      <p class="sidebar-section-label" id="sidebar-nav-principal">Principal</p>
+      <ul class="sidebar-menu" aria-labelledby="sidebar-nav-principal">
+        <li>
+          <a href="/cisia" class="sidebar-link" title="Tableau de bord"
+             {% if path == '/cisia' %}aria-current="page"{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">dashboard</span>
+            <span class="sidebar-link-text">Tableau de bord</span>
+          </a>
+        </li>
+        <li class="sidebar-has-sub">
+          <a href="/cisia/sejours" class="sidebar-link sidebar-link-parent" title="Séjours scorés"
+             {% if path == '/cisia/sejours' %}aria-current="page"{% endif %}
+             {% if path.startswith('/cisia/sejours/') %}data-parent-active="true"{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">clinical_notes</span>
+            <span class="sidebar-link-text">Séjours scorés</span>
+          </a>
+          <ul class="sidebar-subnav" aria-label="Sous-menu séjours">
+            <li>
+              <a href="/cisia/sejours" class="sidebar-link sidebar-link-sub" title="Analyse IA"
+                 {% if path.startswith('/cisia/sejours/') %}aria-current="page"{% endif %}>
+                <span class="sidebar-sub-dot" aria-hidden="true"></span>
+                <span class="sidebar-link-text">Analyse IA</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-section">
+      <p class="sidebar-section-label" id="sidebar-nav-gouvernance">Gouvernance</p>
+      <ul class="sidebar-menu" aria-labelledby="sidebar-nav-gouvernance">
+        <li>
+          <a href="/cisia/biais" class="sidebar-link" title="Audit des biais"
+             {% if path == '/cisia/biais' %}aria-current="page"{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">balance</span>
+            <span class="sidebar-link-text">Audit des biais</span>
+          </a>
+        </li>
+        <li>
+          <a href="/cisia/registre" class="sidebar-link" title="Registre RGPD"
+             {% if path == '/cisia/registre' %}aria-current="page"{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">folder_managed</span>
+            <span class="sidebar-link-text">Registre RGPD</span>
+          </a>
+        </li>
+        <li>
+          <a href="/cisia/jury" class="sidebar-link" title="Parcours jury"
+             {% if path == '/cisia/jury' %}aria-current="page"{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">gavel</span>
+            <span class="sidebar-link-text">Parcours jury</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-section sidebar-section-modules">
+      <p class="sidebar-section-label" id="sidebar-nav-modules">Autres modules</p>
+      <ul class="sidebar-menu" aria-labelledby="sidebar-nav-modules">
+        <li>
+          <a href="/soignant" class="sidebar-link sidebar-link-module" title="CISIA Flow — soignant">
+            <span class="material-symbols-outlined" aria-hidden="true">map</span>
+            <span class="sidebar-link-text">CISIA Flow — soignant</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    {% elif p == 'soignant' %}
+    <div class="sidebar-section">
+      <p class="sidebar-section-label" id="sidebar-nav-soins">Parcours soignant</p>
+      <ul class="sidebar-menu" aria-labelledby="sidebar-nav-soins">
+        <li>
+          <a href="/soignant" class="sidebar-link" title="Plan des étages"
+             {% if path == '/soignant' %}aria-current="page"{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">map</span>
+            <span class="sidebar-link-text">Plan des étages</span>
+          </a>
+        </li>
+        <li class="sidebar-has-sub">
+          <a href="/soignant/lits" class="sidebar-link sidebar-link-parent" title="Tous les lits"
+             {% if path == '/soignant/lits' %}aria-current="page"{% endif %}
+             {% if path.startswith('/soignant/sejours/') %}data-parent-active="true"{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">hotel</span>
+            <span class="sidebar-link-text">Tous les lits</span>
+          </a>
+          <ul class="sidebar-subnav" aria-label="Sous-menu lits">
+            <li>
+              <a href="/soignant/lits" class="sidebar-link sidebar-link-sub" title="Fiche patient"
+                 {% if path.startswith('/soignant/sejours/') %}aria-current="page"{% endif %}>
+                <span class="sidebar-sub-dot" aria-hidden="true"></span>
+                <span class="sidebar-link-text">Fiche patient</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-section">
+      <p class="sidebar-section-label" id="sidebar-nav-ia">Intelligence artificielle</p>
+      <ul class="sidebar-menu" aria-labelledby="sidebar-nav-ia">
+        <li>
+          <a href="/cisia" class="sidebar-link" title="Analyse IA — Readmit">
+            <span class="material-symbols-outlined" aria-hidden="true">psychology</span>
+            <span class="sidebar-link-text">Analyse IA — Readmit</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-section sidebar-section-modules">
+      <p class="sidebar-section-label" id="sidebar-nav-modules">Autres modules</p>
+      <ul class="sidebar-menu" aria-labelledby="sidebar-nav-modules">
+        <li>
+          <a href="/cisia" class="sidebar-link sidebar-link-module" title="CISIA Readmit">
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+            <span class="sidebar-link-text">CISIA Readmit</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-footer" title="Support central">
+    <span class="material-symbols-outlined" aria-hidden="true">support_agent</span>
+    <span class="label-caps sidebar-footer-label">Support central</span>
+  </div>
+</aside>

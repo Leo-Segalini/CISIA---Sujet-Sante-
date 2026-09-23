@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Webapp démo — CISIA Santé</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="Navigation documentation">
+      <a href="../index.html">Accueil</a>
+      <a href="fondation-donnees.html">Fondation données</a>
+      <a href="modele-tabulaire.html">Modèle tabulaire</a>
+      <a href="llm-local.html">LLM local</a>
+      <a href="webapp-demo.html" aria-current="page">Webapp démo</a>
+      <a href="../security/access-control.html">Accès et sécurité</a>
+    </nav>
+    <main>
+      <h1>Webapp de démo locale</h1>
+      <p>Version 0.9.2 — 2026-09-01</p>
+      <h2>Design system</h2>
+      <p>Interface <strong>Clinical Precision</strong> (maquettes Stitch dans <code>stitch_refonte_logiciel_hospitalier/</code>) : sidebar fixe, palette teal <code>#003735</code>, Inter + JetBrains Mono, cartes à bordure légère, badges de statut clinique.</p>
+      <h2>Rôle</h2>
+      <p>Deux parcours séparés depuis le hub <code>/</code> :</p>
+      <ul>
+        <li><strong>Parcours CISIA</strong> (<code>/cisia</code>) : score de réadmission 30&nbsp;j, facteurs SHAP, justification, registre, biais</li>
+        <li><strong>Démo soignant</strong> (<code>/soignant</code>) : plan d’étages (sections dépliables par étage), liste des lits (<code>/soignant/lits</code>), constantes simulées — illustration hors brief principal</li>
+      </ul>
+      <ul>
+        <li>Affichage patient : <strong>nom de famille</strong> + <strong>sexe</strong> uniquement</li>
+        <li>Fiche CISIA : ordre score → SHAP → justification → CR masqué → contexte → territoire</li>
+        <li>Page biais : écarts par sexe / âge / défavorisation</li>
+        <li>Sur l’étage : badge proba 30&nbsp;j + lien vers fiche CISIA</li>
+        <li>Redirections : <code>/sejours</code> et <code>/registre</code> → équivalents <code>/cisia/…</code></li>
+      </ul>
+      <h2>Sécurité</h2>
+      <ul>
+        <li>Bind <code>127.0.0.1:8000</code> uniquement</li>
+        <li>Pas de prénom affiché ; CR masqués avec <code>[PATIENT]</code></li>
+        <li>Compléments INSEE = proxies agrégés, hors identité individuelle</li>
+      </ul>
+      <h2>Lancer</h2>
+      <pre><code>PYTHONPATH=. python scripts/run_pipeline.py
+PYTHONPATH=. python scripts/train_models.py
+PYTHONPATH=. python scripts/run_webapp.py
+# ouvrir http://127.0.0.1:8000</code></pre>
+      <h2>API lits (soignant)</h2>
+      <p><code>GET /api/lits</code> — recherche AJAX avec paramètres <code>q</code>, <code>etage</code> (0–4), <code>service</code>, <code>sexe</code>, <code>page</code>, <code>page_size</code>. Réponse JSON paginée (<code>total</code>, <code>items</code>, <code>filters</code>).</p>
+      <h2>Parcours jury</h2>
+      <p>Route <code>/cisia/jury</code> — démo guidée en 5 étapes pour présentation CIF (~5&nbsp;min) :</p>
+      <ul>
+        <li>Hero avec KPI (étapes, séjours scorés, modèle retenu)</li>
+        <li>Stepper horizontal cliquable (<code>?etape=1…5</code> + ancres <code>#etape-N</code>)</li>
+        <li>Encart privacy (LLM local, bind 127.0.0.1, données synthétiques)</li>
+        <li>Timeline verticale : carte par étape (badge icône, consigne « À faire », CTA primaire + lien étape suivante)</li>
+        <li>Footer : séjour d’exemple + bouton « Lancer le parcours guidé » (<code>POST /cisia/demo/start</code>)</li>
+        <li>Encart lancement : un clic pour démarrer, puis <kbd>Entrée</kbd> à chaque écran (barre de tutoriel)</li>
+      </ul>
+      <p>Classes CSS dédiées : <code>.jury-*</code> dans <code>webapp/static/styles.css</code>.</p>
+      <h2>Changelog</h2>
+      <ul>
+        <li>0.9.2 — Plan des étages : chaque étage en section dépliable (dropdown) avec badges occupation / urgences</li>
+        <li>0.9.2 — Parcours jury : bouton lancement + navigation <kbd>Entrée</kbd> via tutoriel guidé existant</li>
+        <li>0.9.2 — Refonte parcours jury : hero KPI, stepper, timeline 5 étapes, encart privacy, footer démo guidée</li>
+        <li>0.9.1 — Notebook <code>08_benchmark_modeles.ipynb</code> : benchmark 4 modèles (logistic, HGB, RF, XGBoost), courbes ROC/PR, explication risque patient</li>
+        <li>0.9.1 — Page « Tous les lits » : filtres étage/service/sexe, recherche AJAX debounced, pagination sans rechargement, endpoint <code>/api/lits</code></li>
+        <li>0.9.1 — Fiche patient soignant (<code>/soignant/sejours/…</code>) : refonte Clinical Precision (identité, constantes en cartes, prénom, alertes)</li>
+        <li>0.8 — Tutoriel première connexion, auth, export PDF, mode kiosk</li>
+        <li>0.5 — Hub deux parcours, page biais, fiche CISIA, privacy pédagogique, parcours jury 5 étapes</li>
+        <li>0.4 — Urgences pédagogiques (cycle 3&nbsp;min, 1 prioritaire / étage), toast haut-droite</li>
+        <li>0.1 — Première démo score + registre</li>
+      </ul>
+    </main>
+  </div>
+</body>
+</html>

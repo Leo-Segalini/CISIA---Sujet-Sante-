@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CISIA Santé{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body
+  class="{% if demo_spotlight is defined and demo_spotlight %}has-demo-spotlight{% endif %}{% if parcours|default('') == 'login' %} login-page{% elif parcours|default('') in ['cisia', 'soignant'] %} layout-app sidebar-is-expanded{% else %} layout-hub{% endif %}"
+  {% if demo_spotlight is defined and demo_spotlight %}data-demo-spotlight="{{ demo_spotlight }}"{% endif %}
+>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+
+  {% set p = parcours|default('hub') %}
+
+  {% if p in ['cisia', 'soignant'] %}
+  {% include "partials/sidebar.html" %}
+  <div class="app-frame">
+    <header class="app-header">
+      <div class="app-header-start">
+        <div class="app-header-status">
+          <span class="app-status-dot" aria-hidden="true"></span>
+          <span class="label-caps app-status">Système opérationnel</span>
+        </div>
+      </div>
+      <div class="app-header-end">
+        <button type="button" class="header-action-btn" data-kiosk-toggle aria-pressed="false"
+                title="Mode présentation plein écran">
+          <span class="material-symbols-outlined" aria-hidden="true">present_to_all</span>
+          <span class="header-action-label">Présentation</span>
+        </button>
+        {% if current_user is defined and current_user %}
+        <div class="user-menu">
+          <button type="button" class="user-chip" data-user-toggle aria-expanded="false"
+                  aria-controls="user-dropdown" aria-haspopup="true">
+            <img src="/static/assets/avatar-demo.png" alt="" class="user-chip-avatar" width="40" height="40">
+            <span class="user-chip-body">
+              <span class="user-chip-name">{{ current_user.name }}</span>
+              <span class="user-chip-meta">{{ current_user.role }}</span>
+            </span>
+            <span class="material-symbols-outlined user-chip-chevron" aria-hidden="true">expand_more</span>
+          </button>
+          <div id="user-dropdown" class="user-panel" data-user-panel hidden>
+            <div class="user-panel-head">
+              <img src="/static/assets/avatar-demo.png" alt="" class="user-panel-avatar" width="48" height="48">
+              <div class="user-panel-identity">
+                <p class="user-panel-name">{{ current_user.name }}</p>
+                <p class="user-panel-email">{{ current_user.email }}</p>
+              </div>
+            </div>
+            <dl class="user-panel-details">
+              <div>
+                <dt>Rôle</dt>
+                <dd>{{ current_user.role }}</dd>
+              </div>
+              <div>
+                <dt>Établissement</dt>
+                <dd>{{ current_user.etablissement }}</dd>
+              </div>
+            </dl>
+            <form method="post" action="/logout" class="user-panel-actions">
+              <button type="submit" class="user-panel-logout">
+                <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+                Déconnexion
+              </button>
+            </form>
+          </div>
+        </div>
+        {% else %}
+        <div class="user-chip user-chip-static" aria-label="Session démo locale">
+          <img src="/static/assets/avatar-demo.png" alt="" class="user-chip-avatar" width="40" height="40">
+          <span class="user-chip-body">
+            <span class="user-chip-name">Démo locale</span>
+            <span class="user-chip-meta">Données synthétiques</span>
+          </span>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+    <div class="banner banner-dismissible" role="note" data-banner>
+      <strong>Confidentialité :</strong> IA exécutée sur ce poste ·
+      aucune donnée patient envoyée au cloud ·
+      <em>ne remplace pas l’avis médical</em>.
+      <button type="button" class="banner-close" data-banner-close aria-label="Masquer">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </div>
+    {% include "partials/process_bar.html" %}
+  {% else %}
+  <div class="shell">
+    <header class="topbar topbar-hub">
+      <div class="topbar-brand">
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true">+</span>
+          CISIA Santé
+        </a>
+        <p class="tagline">Plateforme IA hospitalière — démo locale</p>
+      </div>
+      <div class="topbar-meta">
+        <ul class="status-pills" aria-label="Statut de la démo">
+          <li class="status-pill status-live"><span class="status-dot" aria-hidden="true"></span> Local</li>
+          <li class="status-pill">Données synthétiques</li>
+          <li class="status-pill status-version">v0.9.0</li>
+        </ul>
+      </div>
+    </header>
+  {% endif %}
+
+    <main id="contenu" class="{% if p in ['cisia', 'soignant'] %}app-main{% endif %}">
+      <div class="{% if p in ['cisia', 'soignant'] %}page-stack{% if page_full_width|default(false) %} page-stack-full{% endif %}{% endif %}">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+  {% if p in ['cisia', 'soignant'] %}
+    <footer class="app-footer">
+      <p>CISIA Santé · démo commerciale · v0.9.0 · {{ overview.n_sejours if overview is defined else '480' }} séjours scorés</p>
+    </footer>
+  </div>
+  {% else %}
+    <footer class="app-footer">
+      <p>CISIA Santé · démo commerciale · CHU régional fictif</p>
+    </footer>
+  </div>
+  {% endif %}
+
+  <script src="/static/demo.js" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

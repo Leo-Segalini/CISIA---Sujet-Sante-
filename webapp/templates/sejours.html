@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Tous les lits — CISIA Flow{% endblock %}
+{% block content %}
+<section class="lits-page" data-lits-page>
+  <header class="page-head lits-head">
+    <div class="lits-head-text">
+      <h1 class="display-name">Tous les lits</h1>
+      <p class="lead">Recherche par <strong>nom, prénom</strong>, chambre, IPP ou NDA.</p>
+    </div>
+  </header>
+
+  <form class="lits-toolbar toolbar-card" id="lits-filters" method="get" action="/soignant/lits" role="search">
+    <div class="lits-search-row">
+      <label class="label-caps" for="q">Chercher (nom, prénom, chambre, IPP…)</label>
+      <div class="toolbar-row">
+        <div class="search-field lits-search-field">
+          <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+          <input id="q" name="q" type="search" value="{{ q }}" autocomplete="off"
+                 placeholder="Nom, prénom, chambre, IPP, NDA…" data-lits-search>
+        </div>
+        <button type="submit" class="btn btn-primary lits-search-btn">
+          <span class="material-symbols-outlined" aria-hidden="true">search</span>
+          Chercher
+        </button>
+      </div>
+    </div>
+
+    <div class="lits-filters-grid" role="group" aria-label="Filtres de la liste des lits">
+      <div class="lits-filter-field">
+        <label class="label-caps" for="filter-etage">Étage</label>
+        <select id="filter-etage" name="etage" class="lits-filter-select" data-lits-filter>
+          <option value="">Tous les étages</option>
+          {% for opt in filter_options.etages %}
+          <option value="{{ opt.value }}" {% if etage is not none and etage|string == opt.value %}selected{% endif %}>
+            {{ opt.label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="lits-filter-field">
+        <label class="label-caps" for="filter-service">Service</label>
+        <select id="filter-service" name="service" class="lits-filter-select" data-lits-filter>
+          <option value="">Tous les services</option>
+          {% for opt in filter_options.services %}
+          <option value="{{ opt.value }}" {% if service == opt.value %}selected{% endif %}>
+            {{ opt.label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="lits-filter-field">
+        <label class="label-caps" for="filter-sexe">Sexe</label>
+        <select id="filter-sexe" name="sexe" class="lits-filter-select" data-lits-filter>
+          <option value="">Tous</option>
+          {% for opt in filter_options.sexes %}
+          <option value="{{ opt.value }}" {% if sexe == opt.value %}selected{% endif %}>
+            {{ opt.label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="lits-filter-actions">
+        <button type="button" class="btn btn-outline btn-sm lits-reset-btn" data-lits-reset hidden>
+          <span class="material-symbols-outlined" aria-hidden="true">filter_alt_off</span>
+          Réinitialiser
+        </button>
+      </div>
+    </div>
+
+    <input type="hidden" name="page" value="{{ data.page }}" data-lits-page-input>
+  </form>
+
+  <div class="lits-list-bar">
+    <p class="lits-results-meta" id="lits-results-meta" aria-live="polite" aria-atomic="true">
+      {{ data.total }} lit(s) — page {{ data.page }}
+    </p>
+    <nav class="pager lits-pager" aria-label="Pagination des lits" data-lits-pager>
+      <button type="button" class="btn btn-outline btn-sm" data-lits-prev
+              {% if data.page <= 1 %}disabled{% endif %} aria-label="Page précédente">
+        ← Précédent
+      </button>
+      <span class="pager-info" data-lits-page-info>Page {{ data.page }}</span>
+      <button type="button" class="btn btn-outline btn-sm" data-lits-next
+              {% if data.page * data.page_size >= data.total %}disabled{% endif %} aria-label="Page suivante">
+        Suivant →
+      </button>
+    </nav>
+  </div>
+
+  <div class="lits-table-panel cp-table-wrap" data-lits-table-wrap aria-busy="false">
+    <div class="lits-loading" data-lits-loading hidden aria-hidden="true">
+      <span class="material-symbols-outlined lits-loading-icon" aria-hidden="true">progress_activity</span>
+      <span class="lits-loading-text">Recherche en cours…</span>
+    </div>
+    <div class="table-scroll">
+      <table class="table-demo cp-table lits-table" data-table-cards data-lits-table>
+        <thead>
+          <tr>
+            <th scope="col">Étage</th>
+            <th scope="col">Chambre / lit</th>
+            <th scope="col">Nom (famille)</th>
+            <th scope="col">Prénom</th>
+            <th scope="col">Sexe</th>
+            <th scope="col">Service</th>
+            <th scope="col" class="num">Âge</th>
+            <th scope="col" class="center">Fiche</th>
+          </tr>
+        </thead>
+        <tbody data-lits-tbody>
+          {% for row in data['items'] %}
+          <tr>
+            <td data-label="Étage"><span class="lits-etage-tag">{{ row.etage_libelle }}</span></td>
+            <td class="mono" data-label="Chambre">
+              <span class="lits-lit-tag">{{ row.lit_complet or (row.chambre ~ row.lit) }}</span>
+            </td>
+            <td data-label="Nom"><strong class="lits-nom">{{ row.NomFamille }}</strong></td>
+            <td data-label="Prénom"><span class="lits-prenom">{{ row.Prenom }}</span></td>
+            <td data-label="Sexe">
+              <span class="lits-sexe-badge lits-sexe-{{ row.Sexe|lower }}">{{ row.Sexe }}</span>
+            </td>
+            <td data-label="Service"><span class="lits-service">{{ row.service_libelle }}</span></td>
+            <td class="num mono-value" data-label="Âge">
+              {% if row.age_admission is not none %}{{ '%.0f'|format(row.age_admission|float) }}{% else %}—{% endif %}
+            </td>
+            <td class="center" data-label="Fiche">
+              <a class="table-link lits-open-link" href="/soignant/sejours/{{ row.SejourID }}">Ouvrir</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr class="lits-empty-row">
+            <td colspan="8">Aucun lit ne correspond à votre recherche.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="lits-error" data-lits-error role="alert" hidden></p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/lits.js" defer></script>
+{% endblock %}

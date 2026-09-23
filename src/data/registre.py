@@ -6,6 +6,7 @@ import pandas as pd
 
 from src.data.load import load_csv
 from src.data.paths import CSV_FILES, ProjectPaths
+from src.data.territoire import COMPLEMENT_COLUMNS, COMPLEMENT_NAME, complement_path
 
 REGISTRE_COLUMNS = [
     "fichier_source",
@@ -18,6 +19,7 @@ REGISTRE_COLUMNS = [
     "justification_hopital",
     "risque_principal",
     "regle_nettoyage",
+    "origine_donnee",
 ]
 
 SENSITIVE = {"identite_directe", "sante_art9", "proxy_socio"}
@@ -45,13 +47,14 @@ def build_source_column_index(paths: ProjectPaths) -> pd.DataFrame:
 def assert_registre_covers_sources(
     registre: pd.DataFrame, column_index: pd.DataFrame
 ) -> None:
-    left = set(zip(registre["fichier_source"], registre["colonne"]))
+    sujet = registre.loc[registre["fichier_source"].isin(CSV_FILES)]
+    left = set(zip(sujet["fichier_source"], sujet["colonne"]))
     right = set(zip(column_index["fichier_source"], column_index["colonne"]))
     missing = sorted(right - left)
     extra = sorted(left - right)
     if missing or extra:
         raise AssertionError(
-            f"Registre incomplet. Manquantes={missing} extra={extra}"
+            f"Registre incomplet (sujet). Manquantes={missing} extra={extra}"
         )
 
 
@@ -67,3 +70,26 @@ def assert_justifications(registre: pd.DataFrame) -> None:
             "Justifications manquantes:\n"
             + bad[["fichier_source", "colonne"]].to_string(index=False)
         )
+    if "origine_donnee" in registre.columns:
+        bad_orig = registre.loc[
+            ~registre["origine_donnee"].isin({"sujet", "insee_ajoute", "derive_affichage"})
+        ]
+        if len(bad_orig):
+            raise AssertionError("origine_donnee inconnue")
+
+
+def assert_complements_insee_enregistres(
+    registre: pd.DataFrame, paths: ProjectPaths
+) -> None:
+    extra = complement_path(paths)
+    if not extra.exists():
+        return
+    needed = {
+        (COMPLEMENT_NAME, c)
+        for c in COMPLEMENT_COLUMNS
+        if c not in {"Commune", "CodePostal", "origine_ligne"}
+    }
+    have = set(zip(registre["fichier_source"], registre["colonne"]))
+    missing = sorted(needed - have)
+    if missing:
+        raise AssertionError(f"Compléments INSEE absents du registre: {missing}")

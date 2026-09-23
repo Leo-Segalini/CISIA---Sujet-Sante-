@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Plan des étages — CISIA Flow{% endblock %}
+{% block content %}
+  <header class="plan-head">
+    <h1 class="headline-section">Plan des étages</h1>
+    <div class="live-clock cp-card-inner" aria-live="polite">
+      <span class="label-caps">Heure poste</span>
+      <strong id="horloge" class="mono-value">—:—:—</strong>
+    </div>
+  </header>
+
+  <section class="ticker plan-ticker" aria-label="Alertes en cours">
+    <div class="ticker-label label-caps">À faire maintenant</div>
+    <p id="fil-principal" class="ticker-text">Connexion aux constantes…</p>
+    <p id="assistant" class="assistant" hidden></p>
+  </section>
+
+  <div class="legend plan-legend" aria-label="Légende des pastilles de statut">
+    <span class="plan-legend-title label-caps">Pastilles</span>
+    <span class="plan-legend-key muted">
+      <span class="plan-legend-key-item"><span class="plan-legend-dot plan-legend-dot--urgent" aria-hidden="true"></span> Urgent</span>
+      <span class="plan-legend-key-item"><span class="plan-legend-dot plan-legend-dot--watch" aria-hidden="true"></span> À surveiller</span>
+      <span class="plan-legend-key-item"><span class="plan-legend-dot plan-legend-dot--calm" aria-hidden="true"></span> Calme</span>
+      <span class="plan-legend-key-item"><span class="plan-legend-dot plan-legend-dot--clean" aria-hidden="true"></span> À nettoyer</span>
+      <span class="plan-legend-key-item"><span class="plan-legend-dot plan-legend-dot--free" aria-hidden="true"></span> Libre</span>
+    </span>
+  </div>
+
+  <div id="etages" class="plan-etages" aria-busy="true" aria-label="Plan des étages en sections dépliables"></div>
+
+  <aside
+    id="alerte-toast"
+    class="alerte-toast cp-card"
+    role="alertdialog"
+    aria-labelledby="alerte-toast-titre"
+    aria-describedby="alerte-toast-detail"
+    hidden
+  >
+    <div class="alerte-toast-head">
+      <p class="alerte-popup-badge label-caps">Notification · Urgence</p>
+      <button type="button" id="alerte-toast-fermer" class="alerte-toast-close" aria-label="Marquer comme lue">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <p id="alerte-toast-titre" class="alerte-toast-titre"></p>
+    <p id="alerte-toast-detail" class="alerte-toast-detail"></p>
+    <p id="alerte-toast-llm" class="assistant" hidden></p>
+    <div class="alerte-toast-actions">
+      <a id="alerte-toast-ouvrir" class="btn btn-primary btn-urgent" href="#">Ouvrir la chambre</a>
+      <button type="button" id="alerte-toast-lu" class="btn btn-outline btn-ghost">Marquer comme lue</button>
+    </div>
+  </aside>
+{% endblock %}
+{% block scripts %}
+<script src="/static/live.js" defer></script>
+{% endblock %}

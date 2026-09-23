@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM local — CISIA Santé</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="Navigation documentation">
+      <a href="../index.html">Accueil</a>
+      <a href="fondation-donnees.html">Fondation données</a>
+      <a href="modele-tabulaire.html">Modèle tabulaire</a>
+      <a href="llm-local.html" aria-current="page">LLM local</a>
+      <a href="../security/access-control.html">Accès et sécurité</a>
+    </nav>
+    <main>
+      <h1>LLM local (comptes-rendus)</h1>
+      <p>Version 0.2 — 2026-08-25</p>
+      <h2>Choix</h2>
+      <ul>
+        <li><strong>Préféré :</strong> <code>Qwen/Qwen2.5-3B-Instruct-GGUF</code> → <code>qwen2.5-3b-instruct-q4_k_m.gguf</code> (~2&nbsp;Go) — meilleures justifications FR sur Mac 16&nbsp;Go.</li>
+        <li><strong>Repli :</strong> Qwen2.5-1.5B Q4_K_M si le 3B n’est pas téléchargé.</li>
+        <li><strong>Runtime :</strong> llama.cpp en sous-processus CPU (stable) — <strong>aucune Inference API cloud</strong>.</li>
+        <li>Hub HF = téléchargement des poids uniquement ; les CR restent sur le poste.</li>
+      </ul>
+      <h2>Commandes</h2>
+      <pre><code>pip install huggingface_hub
+# optionnel : HF_TOKEN pour les quotas Hub
+CMAKE_ARGS="-DGGML_METAL=on" pip install llama-cpp-python
+PYTHONPATH=. python scripts/download_gguf.py
+PYTHONPATH=. python scripts/train_nlp.py</code></pre>
+      <p>Les poids GGUF restent dans <code>models/gguf/</code> (hors git).</p>
+      <h2>Changelog</h2>
+      <ul>
+        <li>0.2 — Upgrade cible 3B Q4, repli 1.5B, règle privacy Hub-only</li>
+        <li>0.1 — Première intégration 1.5B + garde-fous</li>
+      </ul>
+    </main>
+  </div>
+</body>
+</html>

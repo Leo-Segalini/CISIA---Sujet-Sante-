@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Justification des choix — CISIA Santé</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <style>
+    :root {
+      --ok: #0b5c4a;
+      --ok-bg: #e6f4ef;
+      --warn: #8a5a00;
+      --warn-bg: #fff4e0;
+      --no: #8b1e1e;
+      --no-bg: #fdeceb;
+      --info: #1a3a5c;
+      --info-bg: #e8f0f8;
+      --card-border: #2c2c2c;
+    }
+    main { max-width: 58rem; }
+    .meta { color: #444; font-size: 0.95rem; }
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 0.75rem;
+      margin: 1rem 0 1.5rem; list-style: none; padding: 0;
+    }
+    .legend li {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.35rem 0.75rem; border-radius: 999px;
+      border: 1px solid var(--card-border); font-size: 0.9rem; font-weight: 600;
+    }
+    .dot { width: 0.75rem; height: 0.75rem; border-radius: 50%; display: inline-block; }
+    .dot-ok { background: var(--ok); }
+    .dot-warn { background: var(--warn); }
+    .dot-no { background: var(--no); }
+    .dot-info { background: var(--info); }
+    .flow {
+      display: grid; gap: 0.65rem;
+      margin: 1rem 0 2rem;
+    }
+    @media (min-width: 40rem) {
+      .flow { grid-template-columns: repeat(4, 1fr); align-items: stretch; }
+    }
+    .flow-step {
+      border: 2px solid var(--card-border);
+      border-radius: 0.75rem;
+      padding: 0.85rem;
+      background: #fff;
+      min-height: 6.5rem;
+    }
+    .flow-step strong { display: block; margin-bottom: 0.35rem; }
+    .flow-step small { color: #444; }
+    .cards {
+      display: grid; gap: 0.85rem;
+      margin: 1rem 0 2rem;
+    }
+    @media (min-width: 36rem) {
+      .cards { grid-template-columns: 1fr 1fr; }
+    }
+    .card {
+      border: 2px solid var(--card-border);
+      border-radius: 0.75rem;
+      padding: 1rem 1.1rem;
+      background: #fff;
+    }
+    .card h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+    .card p { margin: 0.35rem 0; font-size: 0.95rem; }
+    .card .why { font-weight: 600; }
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.2rem 0.5rem; border-radius: 0.35rem;
+      margin-bottom: 0.5rem;
+    }
+    .tag-ok { background: var(--ok-bg); color: var(--ok); }
+    .tag-warn { background: var(--warn-bg); color: var(--warn); }
+    .tag-no { background: var(--no-bg); color: var(--no); }
+    .tag-info { background: var(--info-bg); color: var(--info); }
+    .card-ok { border-left: 6px solid var(--ok); }
+    .card-warn { border-left: 6px solid var(--warn); }
+    .card-no { border-left: 6px solid var(--no); }
+    .card-info { border-left: 6px solid var(--info); }
+    .decision-tree {
+      border: 2px solid var(--card-border);
+      border-radius: 0.75rem;
+      padding: 1.1rem;
+      background: #fff;
+      margin: 1rem 0 2rem;
+      font-family: ui-monospace, "JetBrains Mono", Menlo, monospace;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+    .src {
+      margin: 0.25rem 0 0;
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .src code { font-size: 0.85rem; }
+    h2 { margin-top: 2rem; border-bottom: 2px solid #1a1a1a; padding-bottom: 0.35rem; }
+    .kpi-row {
+      display: flex; flex-wrap: wrap; gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .kpi {
+      flex: 1 1 8rem;
+      background: #fff;
+      border: 2px solid var(--card-border);
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      text-align: center;
+    }
+    .kpi strong { display: block; font-size: 1.5rem; }
+    .kpi span { font-size: 0.85rem; color: #444; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="Navigation documentation">
+      <p><strong>CISIA Santé</strong></p>
+      <a href="../index.html">Accueil</a>
+      <a href="fondation-donnees.html">Fondation données</a>
+      <a href="justification-choix.html" aria-current="page">Justification des choix</a>
+      <a href="insee-complements.html">INSEE (ajouté)</a>
+      <a href="modele-tabulaire.html">Modèle tabulaire</a>
+      <a href="llm-local.html">LLM local</a>
+      <a href="webapp-demo.html">Webapp démo</a>
+      <a href="../security/access-control.html">Accès et sécurité</a>
+    </nav>
+    <main>
+      <h1>Pourquoi chaque choix ?</h1>
+      <p class="meta">CISIA Santé · v1.0 · 2026-09-21 · Page visuelle pour jury / PowerPoint</p>
+      <p>
+        Une seule question guide tout le projet :
+        <strong>« Cette donnée / ce modèle peut-il aider à prioriser une sortie à risque sans nuire au patient ni au RGPD ? »</strong>
+      </p>
+
+      <ul class="legend" aria-label="Légende">
+        <li><span class="dot dot-ok" aria-hidden="true"></span> Autorisé / retenu</li>
+        <li><span class="dot dot-warn" aria-hidden="true"></span> Flag only / surveillance</li>
+        <li><span class="dot dot-no" aria-hidden="true"></span> Exclu / écarté</li>
+        <li><span class="dot dot-info" aria-hidden="true"></span> Décision d’architecture</li>
+      </ul>
+
+      <div class="kpi-row" aria-label="Synthèse registre">
+        <div class="kpi"><strong>51</strong><span>colonnes autorisées (score sortie)</span></div>
+        <div class="kpi"><strong>7</strong><span>flag only (biais / audit)</span></div>
+        <div class="kpi"><strong>33</strong><span>exclues du score</span></div>
+      </div>
+
+      <h2>1. Arbre de décision — une colonne entre-t-elle dans le score ?</h2>
+      <pre class="decision-tree" aria-label="Arbre de décision données" role="img">Colonne du CSV
+    │
+    ├─ Identité directe (NomPrenom, PersonneAPrevenir…) ?
+    │     └─ EXCLU → coffre identité · secret médical
+    │
+    ├─ Cible (Readmission30j) ?
+    │     └─ EXCLU des features → fuite de label
+    │
+    ├─ Info postérieure à DateSortie (objets connectés bruts) ?
+    │     └─ EXCLU du score_sortie → fuite temporelle
+    │        (OK en agrégats pour score_tele si QualiteSignal=Bon)
+    │
+    ├─ Proxy socio individuel (RégimeAssurance, SituationFamiliale) ?
+    │     └─ FLAG ONLY → biais / audit · hors score tant que non justifié
+    │
+    ├─ Clé technique (PatientID, SejourID, *ID) ?
+    │     └─ EXCLU des features · sert seulement aux jointures
+    │
+    └─ Signal clinique / parcours justifié (âge dérivé, durée, GHM, bio…) ?
+          └─ AUTORISÉ → entre dans features (avec règles qualité)
+</pre>
+      <p class="src">Source machine-lisible : <code>docs/registres/registre_colonnes.csv</code> · Vue interactive : <code>/cisia/registre</code></p>
+
+      <h2>2. Données — exemples concrets « pourquoi ? »</h2>
+      <div class="cards">
+        <article class="card card-no">
+          <span class="tag tag-no">Exclu</span>
+          <h3>NomPrenom, PersonneAPrevenir</h3>
+          <p class="why">Pourquoi ?</p>
+          <p>Identité directe → art.&nbsp;9 RGPD + secret médical. Jamais dans les features ML.</p>
+          <p><strong>Où ça va :</strong> coffre identité (hors curated).</p>
+        </article>
+        <article class="card card-no">
+          <span class="tag tag-no">Exclu</span>
+          <h3>Readmission30j (en entrée)</h3>
+          <p class="why">Pourquoi ?</p>
+          <p>C’est la <em>cible</em>. L’utiliser comme feature = tricher (fuite de label).</p>
+          <p><strong>Usage :</strong> uniquement pour entraîner / évaluer.</p>
+        </article>
+        <article class="card card-warn">
+          <span class="tag tag-warn">Flag only</span>
+          <h3>RégimeAssurance, SituationFamiliale</h3>
+          <p class="why">Pourquoi ?</p>
+          <p>Proxies socio-économiques individuels → risque de biais. Le sujet interdit les données socio individuelles non collectées à l’hôpital.</p>
+          <p><strong>Usage :</strong> audit / biais, pas le score opérationnel.</p>
+        </article>
+        <article class="card card-ok">
+          <span class="tag tag-ok">Autorisé</span>
+          <h3>DureeSejour, GHM, diagnostics, bio…</h3>
+          <p class="why">Pourquoi ?</p>
+          <p>Signaux cliniques de parcours, disponibles à la sortie, justifiés pour prioriser le suivi.</p>
+          <p><strong>Garde-fou :</strong> cutoff ≤ DateSortie + flags qualité.</p>
+        </article>
+        <article class="card card-info">
+          <span class="tag tag-info">Ajout contrôlé</span>
+          <h3>INSEE agrégé (territoire)</h3>
+          <p class="why">Pourquoi ?</p>
+          <p>Proxy territorial <em>agrégé</em> (pas individuel). Préfixe <code>INSEE_ajoute_</code>, fichier dans <code>data/external/</code>, sujet non modifié.</p>
+          <p><strong>Usage :</strong> contexte / biais ; pas d’identité.</p>
+        </article>
+        <article class="card card-no">
+          <span class="tag tag-no">Hors cohorte ML</span>
+          <h3>Sorties ≠ Domicile</h3>
+          <p class="why">Pourquoi ?</p>
+          <p>Décès, transfert, EHPAD, HAD : le besoin « suivi à domicile à 30&nbsp;j » ne s’applique pas de la même façon.</p>
+          <p><strong>Usage :</strong> audit descriptif uniquement.</p>
+        </article>
+      </div>
+
+      <h2>3. Flux de construction (ordre des choix)</h2>
+      <div class="flow" role="list">
+        <div class="flow-step" role="listitem">
+          <strong>1. Inventaire</strong>
+          <small>Qu’avons-nous ? Jointures, grains, volumes.</small>
+        </div>
+        <div class="flow-step" role="listitem">
+          <strong>2. Qualité</strong>
+          <small>Hallucinations données : durées absurdes, constantes hors plage…</small>
+        </div>
+        <div class="flow-step" role="listitem">
+          <strong>3. Registre</strong>
+          <small>Chaque colonne : sensibilité + usage + pourquoi.</small>
+        </div>
+        <div class="flow-step" role="listitem">
+          <strong>4. Features → ML</strong>
+          <small>Seules les colonnes « autorisé » entrent dans le score.</small>
+        </div>
+      </div>
+      <p class="src">Notebooks : <code>notebooks/01_donnees/</code> · Spec : <code>docs/superpowers/specs/2026-08-24-fondation-donnees-readmission-design.md</code></p>
+
+      <h2>4. Modèles — pourquoi retenir / écarter</h2>
+      <div class="cards">
+        <article class="card card-ok">
+          <span class="tag tag-ok">Retenu</span>
+          <h3>LightGBM</h3>
+          <p class="why">Pourquoi ?</p>
+          <p>Meilleur <strong>PR-AUC test</strong> sur splits patient-level (classes déséquilibrées). Optuna sur validation.</p>
+        </article>
+        <article class="card card-info">
+          <span class="tag tag-info">Gardé</span>
+          <h3>Logistic / RF / référence</h3>
+          <p class="why">Pourquoi ?</p>
+          <p>Baseline et alternatives interprétables. Comparaison honnête sur les <em>mêmes</em> splits.</p>
+        </article>
+        <article class="card card-warn">
+          <span class="tag tag-warn">Comparé</span>
+          <h3>MLP (réseau)</h3>
+          <p class="why">Pourquoi prudent ?</p>
+          <p>Petit n (~480 séjours) → risque de surapprentissage. Présent pour la comparaison CIF, pas comme choix « safe » par défaut.</p>
+        </article>
+        <article class="card card-info">
+          <span class="tag tag-info">Métriques</span>
+          <h3>PR-AUC + seuil F2</h3>
+          <p class="why">Pourquoi ?</p>
+          <p>Prévalence faible → accuracy trompeuse. On privilégie le <strong>rappel</strong> (ne pas rater une sortie à risque) via F2 pour le seuil.</p>
+        </article>
+      </div>
+      <p class="src">Rapports : <code>models/benchmark/score_sortie_benchmark.html</code> · Registry : <code>models/registry/score_sortie_latest.json</code></p>
+
+      <h2>5. Produit &amp; privacy — choix structurants</h2>
+      <div class="cards">
+        <article class="card card-ok">
+          <span class="tag tag-ok">Choix</span>
+          <h3>Deux parcours UI</h3>
+          <p><code>/cisia</code> = brief jury (score, SHAP, biais, registre). <code>/soignant</code> = illustration lits — clairement secondaire.</p>
+        </article>
+        <article class="card card-ok">
+          <span class="tag tag-ok">Choix</span>
+          <h3>LLM 100&nbsp;% local</h3>
+          <p>Brief sur CR <em>masqué</em>. Aucune donnée patient envoyée au cloud. Bind <code>127.0.0.1</code>.</p>
+        </article>
+        <article class="card card-ok">
+          <span class="tag tag-ok">Choix</span>
+          <h3>Mesurer les biais</h3>
+          <p>Âge, sexe, territoire : on affiche les écarts, on ne les cache pas (<code>/cisia/biais</code>).</p>
+        </article>
+        <article class="card card-no">
+          <span class="tag tag-no">Hors périmètre</span>
+          <h3>Décision clinique réelle</h3>
+          <p>Données synthétiques. L’outil priorise un suivi ; il ne remplace pas le médecin.</p>
+        </article>
+      </div>
+
+      <h2>6. Où retrouver le détail (pour le PowerPoint)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Question jury</th>
+            <th>Où cliquer / ouvrir</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Pourquoi cette colonne est exclue ?</td>
+            <td>Webapp <code>/cisia/registre</code> (filtre Exclu) ou CSV registre</td>
+          </tr>
+          <tr>
+            <td>Quelles données sont « sales » / incohérentes ?</td>
+            <td>Notebook <code>notebooks/01_donnees/02_qualite_hallucinations.ipynb</code></td>
+          </tr>
+          <tr>
+            <td>Pourquoi ce modèle ?</td>
+            <td><code>models/benchmark/score_sortie_benchmark.html</code></td>
+          </tr>
+          <tr>
+            <td>Pourquoi ce score pour ce patient ?</td>
+            <td>Fiche <code>/cisia/sejours/{id}</code> (SHAP + justification)</td>
+          </tr>
+          <tr>
+            <td>Décisions figées du chantier données</td>
+            <td>Spec fondation (section « Décisions figées »)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Accessibilité</h2>
+      <ul>
+        <li>Couleur + texte (tags) : jamais la couleur seule</li>
+        <li>Contraste fort, police ≥ 16&nbsp;px</li>
+        <li>Arbre en <code>&lt;pre&gt;</code> lisible au clavier / copiable</li>
+      </ul>
+
+      <h2>Changelog</h2>
+      <ul>
+        <li>2026-09-21 — Création de la page visuelle « justification des choix » pour jury / PowerPoint</li>
+      </ul>
+    </main>
+  </div>
+</body>
+</html>

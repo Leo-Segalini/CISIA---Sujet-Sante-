@@ -41,6 +41,10 @@ class ProjectPaths:
         return self.root / "data" / "curated"
 
     @property
+    def models(self) -> Path:
+        return self.root / "models"
+
+    @property
     def registres(self) -> Path:
         return self.root / "docs" / "registres"
 
@@ -50,7 +54,14 @@ class ProjectPaths:
         return self.root
 
     def ensure_data_dirs(self) -> None:
-        for p in (self.raw, self.vault, self.pseudonymise, self.curated, self.registres):
+        for p in (
+            self.raw,
+            self.vault,
+            self.pseudonymise,
+            self.curated,
+            self.registres,
+            self.models,
+        ):
             p.mkdir(parents=True, exist_ok=True)
 
 

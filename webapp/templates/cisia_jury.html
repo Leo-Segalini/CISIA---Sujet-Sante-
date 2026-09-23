@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Parcours jury — CISIA{% endblock %}
+{% block content %}
+  <header class="jury-hero">
+    <div class="jury-hero-text">
+      <p class="label-caps jury-kicker">Présentation CIF · 5 minutes</p>
+      <h1 class="display-name">Parcours jury</h1>
+      <p class="jury-lead">
+        Enchaînement recommandé pour présenter le cœur CISIA :
+        réadmission à 30&nbsp;jours, explicabilité et protection des données.
+      </p>
+    </div>
+    <ul class="jury-kpis" aria-label="Indicateurs démo">
+      <li class="jury-kpi">
+        <span class="jury-kpi-value">5</span>
+        <span class="jury-kpi-label">Étapes</span>
+      </li>
+      <li class="jury-kpi">
+        <span class="jury-kpi-value">{{ overview.n_sejours if overview is defined else '480' }}</span>
+        <span class="jury-kpi-label">Séjours scorés</span>
+      </li>
+      <li class="jury-kpi">
+        <span class="jury-kpi-value">{{ overview.modele_retenu if overview is defined else '—' }}</span>
+        <span class="jury-kpi-label">Modèle</span>
+      </li>
+    </ul>
+  </header>
+
+  {% if demo_tutorial|default(false) %}
+  <div class="jury-launch jury-launch-active" role="status" aria-live="polite">
+    <span class="material-symbols-outlined jury-launch-icon" aria-hidden="true">play_circle</span>
+    <div>
+      <p class="jury-launch-title">Tutoriel actif</p>
+      <p class="jury-launch-text">
+        Appuyez sur <kbd>Entrée</kbd> pour démarrer l’étape&nbsp;1,
+        puis continuez avec <kbd>Entrée</kbd> à chaque écran.
+      </p>
+    </div>
+  </div>
+  {% else %}
+  <section class="jury-launch" aria-labelledby="jury-launch-title">
+    <span class="material-symbols-outlined jury-launch-icon" aria-hidden="true">play_circle</span>
+    <div class="jury-launch-body">
+      <h2 id="jury-launch-title" class="jury-launch-title">Démonstration guidée</h2>
+      <p class="jury-launch-text">
+        Lancez le parcours en un clic, puis avancez uniquement avec la touche
+        <kbd>Entrée</kbd> — idéal pour une présentation devant jury.
+      </p>
+      <form method="post" action="/cisia/demo/start" class="jury-launch-form">
+        <button type="submit" class="btn btn-primary btn-lg jury-launch-btn">
+          <span class="material-symbols-outlined" aria-hidden="true">rocket_launch</span>
+          Lancer le parcours guidé
+        </button>
+      </form>
+      <p class="jury-launch-steps muted">5 étapes · score → séjours → fiche → biais → registre</p>
+    </div>
+  </section>
+  {% endif %}
+
+  <nav class="jury-stepper" aria-label="Navigation des étapes">
+    <ol class="jury-stepper-list">
+      {% for s in steps %}
+      <li>
+        <a href="/cisia/jury?etape={{ s.n }}#etape-{{ s.n }}"
+           class="jury-stepper-link {% if s.n == etape %}is-current{% elif s.n < etape %}is-done{% endif %}"
+           {% if s.n == etape %}aria-current="step"{% endif %}>
+          <span class="jury-stepper-num" aria-hidden="true">{{ s.n }}</span>
+          <span class="material-symbols-outlined jury-stepper-icon" aria-hidden="true">{{ s.icon }}</span>
+          <span class="jury-stepper-label">{{ s.titre_court }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+  </nav>
+
+  <aside class="jury-privacy" aria-labelledby="privacy-jury">
+    <span class="material-symbols-outlined jury-privacy-icon" aria-hidden="true">lock</span>
+    <div>
+      <h2 id="privacy-jury">Rappel privacy</h2>
+      <p>
+        Modèle LLM <strong>local</strong> · bind <code class="mono-value">127.0.0.1</code> ·
+        données <strong>synthétiques</strong> · CR masqués ·
+        <strong>rien ne sort du poste</strong> pendant l’inférence.
+      </p>
+    </div>
+  </aside>
+
+  <ol class="jury-timeline">
+    {% for s in steps %}
+    <li>
+      <article class="jury-step {% if s.n == etape %}is-current{% elif s.n < etape %}is-done{% endif %}"
+               id="etape-{{ s.n }}"
+               {% if s.n == etape %}aria-current="step"{% endif %}>
+        <header class="jury-step-head">
+          <span class="jury-step-badge" aria-hidden="true">
+            <span class="material-symbols-outlined">{{ s.icon }}</span>
+          </span>
+          <div>
+            <p class="label-caps jury-step-kicker">Étape {{ s.n }} / 5</p>
+            <h2>{{ s.titre }}</h2>
+            <p class="jury-step-short">{{ s.texte_court }}</p>
+          </div>
+        </header>
+        <div class="jury-step-body">
+          <p>{{ s.texte }}</p>
+          <div class="jury-step-todo" role="note">
+            <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
+            <p><strong>À faire :</strong> {{ s.a_faire }}</p>
+          </div>
+          <div class="jury-step-actions">
+            <a class="btn btn-primary" href="{{ s.href }}">{{ s.cta }}</a>
+            {% if s.n < 5 %}
+            <a class="btn btn-outline btn-sm"
+               href="/cisia/jury?etape={{ s.n + 1 }}#etape-{{ s.n + 1 }}">
+              Étape suivante →
+            </a>
+            {% else %}
+            <a class="btn btn-outline btn-sm" href="/soignant">Option : démo soignant</a>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+    </li>
+    {% endfor %}
+  </ol>
+
+  <footer class="jury-footer">
+    {% if sejour_exemple %}
+    <p>
+      Séjour d’exemple pour la démo :
+      <a class="jury-link" href="/cisia/sejours/{{ sejour_exemple }}">{{ sejour_exemple }}</a>
+    </p>
+    {% endif %}
+    {% if not demo_tutorial|default(false) %}
+    <form method="post" action="/cisia/demo/start" class="jury-launch-form jury-launch-form-inline">
+      <button type="submit" class="btn btn-primary">
+        Lancer le parcours guidé
+      </button>
+    </form>
+    {% else %}
+    <p class="jury-footer-hint muted">
+      <kbd>Entrée</kbd> pour avancer · barre de progression en haut de l’écran
+    </p>
+    {% endif %}
+  </footer>
+{% endblock %}

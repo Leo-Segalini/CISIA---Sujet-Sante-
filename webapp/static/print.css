@@ -1,0 +1,16 @@
+@media screen {
+  .print-page { max-width: 48rem; margin: 2rem auto; padding: 1rem; }
+  .print-no-screen { display: none; }
+}
+
+@media print {
+  body.print-page { font-size: 11pt; color: #000; background: #fff; }
+  .print-head { border-bottom: 2px solid #003735; margin-bottom: 1rem; padding-bottom: 0.5rem; }
+  .print-logo { font-weight: 700; font-size: 14pt; color: #003735; margin: 0; }
+  .print-meta { margin: 0.25rem 0 0; font-size: 9pt; color: #444; }
+  .print-score-value { font-size: 28pt; font-weight: 800; margin: 0.25rem 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #ccc; padding: 0.35rem 0.5rem; text-align: left; }
+  blockquote { border-left: 4px solid #0f5c4c; margin: 0; padding: 0.5rem 1rem; }
+  .print-footer { margin-top: 2rem; font-size: 8pt; color: #666; }
+}

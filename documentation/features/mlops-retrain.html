@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <title>MLOps — ré-entraînement — CISIA Santé</title>
+  <link rel="stylesheet" href="../assets/styles.css"/>
+</head>
+<body>
+  <main>
+    <h1>MLOps — ré-entraînement & APIs</h1>
+    <p><strong>Version :</strong> 0.10.0 · <strong>Date :</strong> 2026-09-01</p>
+
+    <h2>Modèles benchmark</h2>
+    <p>reference · logistic · random_forest · lightgbm · mlp — classement PR-AUC test.</p>
+
+    <h2>Optuna</h2>
+    <pre><code>PYTHONPATH=. python scripts/run_benchmark.py --optuna --trials 25</code></pre>
+
+    <h2>API</h2>
+    <ul>
+      <li><code>GET /api/ml/status</code></li>
+      <li><code>POST /api/ml/retrain</code> — body <code>{"optuna": true}</code></li>
+      <li><code>POST /api/ml/ingest/fhir</code> — body <code>{"patient_id": "..."}</code></li>
+    </ul>
+
+    <h2>Docker</h2>
+    <pre><code>docker compose up --build webapp
+docker compose --profile mlops up retrain-cron</code></pre>
+
+    <h2>Changelog</h2>
+    <ul>
+      <li>0.10.0 — 5 modèles, Optuna, Docker, API MLOps, FHIR sandbox</li>
+    </ul>
+  </main>
+</body>
+</html>

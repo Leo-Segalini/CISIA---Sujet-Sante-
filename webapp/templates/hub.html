@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}CISIA Santé — Plateforme IA hospitalière{% endblock %}
+{% block content %}
+  <section class="sales-hero">
+    <p class="cisia-kicker label-caps">Solution SaaS · hôpitaux &amp; GHT</p>
+    <h1 class="display-name">Anticipez les réadmissions à 30&nbsp;jours</h1>
+    <p class="lead sales-lead">
+      Score prédictif, explicabilité SHAP, justification IA locale et registre RGPD —
+      intégrable au SIH, sans envoyer de données patient au cloud.
+    </p>
+    <div class="sales-cta-row">
+      <a class="btn btn-primary btn-lg sales-cta-main" href="/cisia">
+        Démarrer la démo commerciale →
+      </a>
+      <a class="btn btn-outline btn-lg" href="/soignant">Voir le module soignant</a>
+    </div>
+    <ul class="sales-trust" aria-label="Points forts">
+      <li><strong>480</strong> séjours scorés</li>
+      <li><strong>100&nbsp;%</strong> local</li>
+      <li><strong>RGPD</strong> art.&nbsp;9</li>
+      <li><strong>SHAP</strong> + LLM offline</li>
+    </ul>
+  </section>
+
+  <aside class="privacy-panel" aria-labelledby="privacy-titre">
+    <h2 id="privacy-titre">Architecture privacy-by-design</h2>
+    <p>
+      Les comptes-rendus (masqués) sont analysés <strong>sur votre infrastructure</strong>.
+      Hugging Face sert uniquement au téléchargement initial des poids du modèle.
+    </p>
+    <ol class="privacy-flow" aria-label="Schéma : rien ne sort du poste">
+      <li>
+        <span class="flow-step">1. SIH</span>
+        <span class="flow-desc">Dossier pseudonymisé</span>
+      </li>
+      <li class="flow-arrow" aria-hidden="true">→</li>
+      <li>
+        <span class="flow-step">2. Serveur local</span>
+        <span class="flow-desc">Score + SHAP + LLM GGUF</span>
+      </li>
+      <li class="flow-arrow" aria-hidden="true">→</li>
+      <li>
+        <span class="flow-step">3. Soignant</span>
+        <span class="flow-desc">Alerte &amp; justification</span>
+      </li>
+      <li class="flow-arrow" aria-hidden="true">↛</li>
+      <li class="flow-blocked">
+        <span class="flow-step">Cloud IA</span>
+        <span class="flow-desc">Aucune donnée patient</span>
+      </li>
+    </ol>
+  </aside>
+
+  <section class="hub-actions" aria-label="Modules">
+    <a class="hub-card hub-card-featured" href="/cisia">
+      <span class="hub-card-badge label-caps">Recommandé</span>
+      <h2>CISIA Readmit</h2>
+      <p>Parcours guidé en 5 étapes : score → séjours à risque → fiche patient → biais → registre.</p>
+      <span class="hub-card-link">Lancer →</span>
+    </a>
+    <a class="hub-card hub-card-secondary" href="/soignant">
+      <h2>CISIA Flow</h2>
+      <p>Plan d’étages temps réel, constantes vitales et alertes — illustration post-démo.</p>
+      <span class="hub-card-link">Explorer →</span>
+    </a>
+  </section>
+{% endblock %}

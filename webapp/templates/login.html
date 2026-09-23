@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion — CISIA Santé</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="login-page">
+  <a class="skip-link" href="#login-form">Aller au formulaire de connexion</a>
+
+  <main class="login-gate">
+    <aside class="login-gate-visual" aria-hidden="true">
+      <img src="/static/assets/login-hero.png" alt="" width="1200" height="1600" decoding="async">
+      <div class="login-gate-overlay">
+        <p class="login-gate-quote">Une intelligence clinique exécutable entièrement sur votre infrastructure.</p>
+      </div>
+    </aside>
+
+    <section class="login-gate-form" aria-labelledby="login-titre">
+      <header class="login-gate-brand">
+        <img class="login-gate-logo" src="/static/assets/cisia-logo.png"
+             alt="" width="512" height="512" decoding="async">
+        <p class="login-gate-product">CISIA Santé</p>
+        <p class="login-gate-tagline">Anticipation des réadmissions à 30&nbsp;jours</p>
+      </header>
+
+      <div class="login-gate-body">
+        <header class="login-form-head">
+          <h1 id="login-titre">Connexion</h1>
+          <p class="muted">Environnement de démonstration</p>
+        </header>
+
+        {% if error %}
+        <div class="login-error" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form id="login-form" class="login-form" method="post" action="/login">
+          {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+          <div class="field">
+            <label for="email">Adresse e-mail</label>
+            <input id="email" name="email" type="email" autocomplete="username"
+                   required value="{{ email|default('demo@cisia.fr') }}">
+          </div>
+          <div class="field">
+            <label for="password">Mot de passe</label>
+            <input id="password" name="password" type="password" autocomplete="current-password"
+                   required placeholder="Mot de passe démo">
+            <p class="login-quick-fill">
+              <button type="button" id="fill-demo" class="link-btn">Remplir le compte démo</button>
+            </p>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg login-submit">Se connecter</button>
+        </form>
+
+        <p class="login-divider" aria-hidden="true"><span>ou</span></p>
+
+        <form class="login-guest-form" method="post" action="/login/guest">
+          <button type="submit" class="btn btn-outline btn-lg login-guest" id="guest-demo">
+            Accès salon — démo guidée
+          </button>
+        </form>
+
+        <details class="login-hint">
+          <summary>Comptes de démonstration</summary>
+          <ul>
+            {% for acc in accounts %}
+            <li>
+              <strong>{{ acc.role }}</strong><br>
+              <code>{{ acc.email }}</code> · <code>{{ acc.password }}</code>
+            </li>
+            {% endfor %}
+          </ul>
+        </details>
+
+        <p class="login-legal muted">
+          Données fictives · IA locale · Ne remplace pas l'avis médical
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById("fill-demo")?.addEventListener("click", function () {
+      document.getElementById("email").value = "demo@cisia.fr";
+      document.getElementById("password").value = "Readmit2026";
+      document.getElementById("password").focus();
+    });
+  </script>
+</body>
+</html>

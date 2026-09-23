@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compléments INSEE — CISIA Santé</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="Navigation documentation">
+      <a href="../index.html">Accueil</a>
+      <a href="fondation-donnees.html">Fondation données</a>
+      <a href="insee-complements.html" aria-current="page">INSEE (ajouté)</a>
+      <a href="webapp-demo.html">Webapp démo</a>
+    </nav>
+    <main>
+      <h1>Compléments INSEE (hors sujet)</h1>
+      <p>Version 1.0 — 2026-08-24</p>
+      <h2>Principe</h2>
+      <p>
+        Le fichier pédagogique <code>territoire_insee.csv</code> du sujet n’est <strong>jamais modifié</strong>.
+        Un second fichier <code>data/external/territoire_insee_complements.csv</code> ajoute des colonnes préfixées
+        <code>INSEE_ajoute_*</code>, jointes sur <code>Commune</code> + <code>CodePostal</code>.
+      </p>
+      <h2>Colonnes ajoutées</h2>
+      <ul>
+        <li><code>INSEE_ajoute_CodeCommune</code> — code COG</li>
+        <li><code>INSEE_ajoute_PopulationLegale</code> — population légale (millésime 2021)</li>
+        <li><code>INSEE_ajoute_PartPlus65Ans_pct</code> — part des 65 ans et plus</li>
+        <li><code>INSEE_ajoute_Departement</code> / <code>Region</code></li>
+        <li><code>INSEE_ajoute_EcartPop_vs_sujet</code> — audit qualité (sujet − INSEE)</li>
+      </ul>
+      <h2>Registre</h2>
+      <p>Colonne <code>origine_donnee</code> : <code>sujet</code> | <code>insee_ajoute</code> | <code>derive_affichage</code>.</p>
+      <p>Les compléments INSEE sont exposés dans la webapp (fiche lit). Ils ne sont pas encore injectés dans le modèle ML entraîné (évite de casser le bundle).</p>
+      <h2>Accessibilité</h2>
+      <p>Dans l’UI, deux cartes distinctes « Données du sujet » / « INSEE ajouté » (couleur + titre, pas la couleur seule).</p>
+    </main>
+  </div>
+</body>
+</html>

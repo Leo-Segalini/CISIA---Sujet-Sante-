@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>État du service — CISIA Santé</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      color: #191c1c;
+      background: #eef3f1;
+    }
+    .page {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background: linear-gradient(165deg, #f8faf8 0%, #eef3f1 100%);
+    }
+    .card {
+      width: 100%;
+      max-width: 28rem;
+      background: #fff;
+      border: 1px solid #bfc8c7;
+      border-radius: 12px;
+      padding: 2rem 1.75rem;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(25, 28, 28, 0.08);
+    }
+    .logo {
+      display: block;
+      height: 48px;
+      width: auto;
+      margin: 0 auto 0.5rem;
+    }
+    .brand {
+      margin: 0 0 0.25rem;
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #003735;
+    }
+    .kicker {
+      margin: 0 0 1.5rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #515f74;
+    }
+    .status {
+      display: inline-block;
+      margin: 0 0 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .status-ok {
+      background: #e6f4ed;
+      color: #1f5c40;
+      border: 1px solid #9fd4b8;
+    }
+    .status-warn {
+      background: #fff4e5;
+      color: #7a4d00;
+      border: 1px solid #e8c98a;
+    }
+    .lead {
+      margin: 0 0 1.5rem;
+      font-size: 0.875rem;
+      color: #404848;
+    }
+    .meta {
+      display: grid;
+      gap: 0.75rem;
+      margin: 0;
+      padding: 1rem 0 0;
+      border-top: 1px solid #e1e3e2;
+      text-align: left;
+    }
+    .meta div {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.875rem;
+    }
+    .meta dt {
+      margin: 0;
+      color: #515f74;
+      font-weight: 500;
+    }
+    .meta dd {
+      margin: 0;
+      font-weight: 600;
+      text-align: right;
+    }
+    .footer {
+      margin: 1.25rem 0 0;
+      padding-top: 1rem;
+      border-top: 1px solid #e1e3e2;
+      font-size: 0.75rem;
+      color: #707978;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <article class="card">
+      <img class="logo" src="/static/assets/cisia-logo.png" alt="CISIA Santé" width="512" height="512">
+      <p class="brand">CISIA Santé</p>
+      <p class="kicker">État du service</p>
+
+      {% if health_status.status == "ok" %}
+      <p class="status status-ok" role="status">Opérationnel</p>
+      {% else %}
+      <p class="status status-warn" role="status">Dégradé</p>
+      {% endif %}
+
+      <p class="lead">Infrastructure uniquement — aucune donnée patient affichée.</p>
+
+      <dl class="meta">
+        <div>
+          <dt>Version</dt>
+          <dd>{{ health_status.version }}</dd>
+        </div>
+        <div>
+          <dt>Environnement</dt>
+          <dd>{{ health_status.environment }}</dd>
+        </div>
+        <div>
+          <dt>Horodatage</dt>
+          <dd><time datetime="{{ health_status.timestamp }}">{{ health_status.timestamp_display }}</time></dd>
+        </div>
+      </dl>
+
+      <p class="footer">Démo locale · données synthétiques</p>
+    </article>
+  </main>
+</body>
+</html>

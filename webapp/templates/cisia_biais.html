@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Audit des biais — CISIA Readmit{% endblock %}
+{% block content %}
+  {% if demo_tutorial|default(false) %}
+  <div class="demo-callout" role="status">
+    <p class="demo-callout-label label-caps">Tutoriel · étape 4</p>
+    <p>
+      Montrez l’écart sur la tranche <strong>&gt;80 ans</strong>, puis <kbd>Entrée</kbd>.
+    </p>
+  </div>
+  {% endif %}
+
+  <header class="biais-hero">
+    <div class="biais-hero-text">
+      <p class="label-caps biais-kicker">Équité &amp; transparence</p>
+      <h1 class="display-name">Audit des biais</h1>
+      <p class="biais-lead">
+        Mesure des écarts par sexe, âge et territoire — <strong>aucun biais n’est masqué</strong>.
+        Modèle analysé : <strong>{{ report.modele }}</strong>.
+      </p>
+    </div>
+    <ul class="biais-kpis" aria-label="Synthèse">
+      <li class="biais-kpi">
+        <span class="biais-kpi-value">{{ report.total_groups }}</span>
+        <span class="biais-kpi-label">Groupes</span>
+      </li>
+      <li class="biais-kpi">
+        <span class="biais-kpi-value">{{ report.total_n }}</span>
+        <span class="biais-kpi-label">Observations</span>
+      </li>
+      {% if report.recall_spread is not none %}
+      <li class="biais-kpi biais-kpi-warn">
+        <span class="biais-kpi-value">{{ report.recall_spread }}&nbsp;pts</span>
+        <span class="biais-kpi-label">Écart rappel max.</span>
+      </li>
+      {% endif %}
+    </ul>
+  </header>
+
+  <div class="biais-toolbar" role="group" aria-label="Modèle scoré">
+    <a class="biais-score-tab {% if score != 'tele' %}is-active{% endif %}"
+       href="/cisia/biais?score=sortie"
+       {% if score != 'tele' %}aria-current="true"{% endif %}>
+      Score sortie
+    </a>
+    <a class="biais-score-tab {% if score == 'tele' %}is-active{% endif %}"
+       href="/cisia/biais?score=tele"
+       {% if score == 'tele' %}aria-current="true"{% endif %}>
+      Score télésurveillance
+    </a>
+  </div>
+
+  {% if report.categories %}
+  <div class="biais-categories">
+    {% for cat in report.categories %}
+    <section class="biais-category" aria-labelledby="biais-cat-{{ cat.id }}">
+      <header class="biais-category-head">
+        <span class="material-symbols-outlined biais-category-icon" aria-hidden="true">{{ cat.icon }}</span>
+        <div>
+          <h2 id="biais-cat-{{ cat.id }}">{{ cat.title }}</h2>
+          {% if cat.description %}<p>{{ cat.description }}</p>{% endif %}
+        </div>
+      </header>
+      <ul class="biais-group-list">
+        {% for r in cat.rows %}
+        <li>
+          <article class="biais-group-card {% if demo_tutorial and ('>80' in r.groupe|string) %}biais-group-highlight{% endif %}"
+                   {% if demo_tutorial and ('>80' in r.groupe|string) %}
+                   data-demo-target="biais-age"
+                   data-demo-hint="{{ demo_spotlight_hint|default('Écart de performance par tranche d’âge') }}"
+                   {% endif %}>
+            <header class="biais-group-head">
+              <h3>{{ r.label }}</h3>
+              <span class="biais-group-n mono-value">{{ r.n }} obs.</span>
+            </header>
+            <dl class="biais-metrics">
+              <div class="biais-metric">
+                <dt>Prévalence</dt>
+                <dd>
+                  {% if r.prevalence_pct is not none %}
+                  <span class="biais-metric-val">{{ r.prevalence_pct }}&nbsp;%</span>
+                  <span class="biais-bar" aria-hidden="true"><span style="width: {{ [r.prevalence_pct, 100]|min }}%"></span></span>
+                  {% else %}<span class="biais-metric-empty">—</span>{% endif %}
+                </dd>
+              </div>
+              <div class="biais-metric">
+                <dt>Rappel</dt>
+                <dd>
+                  {% if r.rappel_pct is not none %}
+                  <span class="biais-metric-val">{{ r.rappel_pct }}&nbsp;%</span>
+                  <span class="biais-bar biais-bar-recall" aria-hidden="true"><span style="width: {{ [r.rappel_pct, 100]|min }}%"></span></span>
+                  {% else %}<span class="biais-metric-empty">—</span>{% endif %}
+                </dd>
+              </div>
+              <div class="biais-metric">
+                <dt>Taux d’alerte</dt>
+                <dd>
+                  {% if r.taux_alerte_pct is not none %}
+                  <span class="biais-metric-val">{{ r.taux_alerte_pct }}&nbsp;%</span>
+                  <span class="biais-bar biais-bar-alert" aria-hidden="true"><span style="width: {{ [r.taux_alerte_pct, 100]|min }}%"></span></span>
+                  {% else %}<span class="biais-metric-empty">—</span>{% endif %}
+                </dd>
+              </div>
+            </dl>
+            <p class="biais-group-code mono-value">{{ r.groupe }}</p>
+          </article>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="biais-empty" role="status">
+    <span class="material-symbols-outlined biais-empty-icon" aria-hidden="true">analytics</span>
+    <p>Aucun fichier de biais — lancer <code>scripts/train_models.py</code>.</p>
+  </div>
+  {% endif %}
+
+  <footer class="biais-footer">
+    <p>
+      Les écarts de rappel ou de taux d’alerte entre groupes doivent être discutés en comité clinique
+      avant toute généralisation du modèle.
+    </p>
+    {% if demo_tutorial|default(false) %}
+    <a class="btn btn-primary" href="/cisia/registre">Étape suivante — Registre →</a>
+    {% else %}
+    <a class="btn btn-outline" href="/cisia/registre">Voir le registre RGPD</a>
+    {% endif %}
+  </footer>
+{% endblock %}

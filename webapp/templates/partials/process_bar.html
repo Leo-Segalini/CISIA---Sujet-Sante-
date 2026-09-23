@@ -1,0 +1,37 @@
+{% if parcours|default('') == 'cisia' and demo_tutorial|default(false) and process_suivant is defined and process_suivant %}
+<aside class="process-bar" data-demo-nav aria-label="Progression du tutoriel">
+  <div class="process-bar-steps" aria-hidden="true">
+    {% for n in range(1, process_total + 1) %}
+    <span class="process-dot {% if process_step > 0 and n < process_step %}is-done{% elif n == process_step %}is-current{% endif %}"
+          title="Étape {{ n }}"></span>
+    {% endfor %}
+  </div>
+  <div class="process-bar-main">
+    <p class="process-bar-step">
+      {% if process_step == 0 %}
+      Tutoriel · <strong>prêt à démarrer</strong>
+      {% else %}
+      Tutoriel · étape <strong>{{ process_step }}</strong> / {{ process_total }}
+      {% endif %}
+      <span class="process-mode-badge"><kbd>Entrée</kbd> pour avancer</span>
+    </p>
+    <p class="process-bar-tip">{{ process_tip }}</p>
+  </div>
+  <div class="process-bar-actions">
+    <a class="btn btn-primary process-bar-next"
+       href="{{ process_suivant.href }}"
+       {% if demo_spotlight is defined and demo_spotlight == 'process-next' %}
+       data-demo-target="process-next"
+       data-demo-hint="{{ demo_spotlight_hint|default('Continuer le tutoriel') }}"
+       {% endif %}>
+      {{ process_suivant.label }} →
+    </a>
+    <form method="post" action="/cisia/demo/terminer" class="process-skip-form">
+      <input type="hidden" name="next" value="{{ request.url.path }}">
+      <button type="submit" class="btn-skip-tuto" title="Quitter le tutoriel guidé">
+        Quitter le tutoriel
+      </button>
+    </form>
+  </div>
+</aside>
+{% endif %}

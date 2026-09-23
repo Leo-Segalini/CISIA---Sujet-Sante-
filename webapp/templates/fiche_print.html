@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Fiche {{ d.SejourID }} — CISIA Readmit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/print.css">
+</head>
+<body class="print-page">
+  <header class="print-head">
+    <p class="print-logo label-caps">CISIA Readmit</p>
+    <p class="print-meta">Fiche sortie · {{ generated_at }} · Données synthétiques</p>
+  </header>
+
+  <section class="print-section">
+    <h1 class="display-name">{{ d.NomFamille }} — {{ d.SejourID }}</h1>
+    <p>{{ d.SexeLibelle }} · {% if d.age is not none %}{{ d.age }} ans{% endif %}
+       · {{ d.service_libelle }}</p>
+  </section>
+
+  <section class="print-score cp-card">
+    <h2 class="headline-section">Risque réadmission 30 jours</h2>
+    <p class="print-score-value">{{ d.proba_pct }}&nbsp;%</p>
+    <p>Seuil {{ d.seuil_pct }}&nbsp;% ·
+      {% if d.alerte_suivi_renforce %}<strong>Suivi renforcé</strong>{% else %}Risque faible{% endif %}
+    </p>
+  </section>
+
+  {% if d.top_shap_global %}
+  <section class="print-section cp-card">
+    <h2 class="headline-section">Facteurs SHAP</h2>
+    <table class="cp-table">
+      <thead><tr><th>#</th><th>Variable</th><th>Valeur</th><th class="num">Importance</th></tr></thead>
+      <tbody>
+        {% for fact in d.top_shap_global %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ fact.libelle or fact.feature }}</td>
+          <td class="mono-value">{{ fact.valeur or '—' }}</td>
+          <td class="num mono-value">{{ '%.2f'|format(fact.mean_abs_shap) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  <section class="print-section cp-card">
+    <h2 class="headline-section">Justification</h2>
+    <blockquote>{{ d.justification }}</blockquote>
+    <p class="muted">{{ d.justification_backend }}</p>
+  </section>
+
+  <footer class="print-footer">
+    CISIA Santé · IA locale · Ne remplace pas l'avis médical
+  </footer>
+
+  <script>
+    window.addEventListener("load", function () { window.print(); });
+  </script>
+</body>
+</html>

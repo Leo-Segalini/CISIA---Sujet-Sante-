@@ -1,3 +1,4 @@
+# --- Runtime / secrets ---
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -5,9 +6,50 @@ __pycache__/
 .venv/
 venv/
 .env
+.DS_Store
+.run/
+*.log
+
+# --- Données dérivées (reproductibles via pipeline) ---
 data/raw/
 data/vault_identite/
 data/pseudonymise/
 data/curated/
+data/external/
 *.parquet
-.DS_Store
+
+# --- Modèles lourds / artefacts (ré-entraînables) ---
+models/*.joblib
+models/*.pkl
+models/*.txt
+models/gguf/
+models/registry/
+models/benchmark/
+models/*_biais.csv
+models/*_shap.csv
+models/cr_*.csv
+models/cr_*.json
+
+# --- Outils IDE / agents (hors transfert jury) ---
+.cursor/
+.specify/
+.superpowers/
+.claude/
+.idea/
+.vscode/
+
+# --- Présentations & livrables personnels ---
+docs/presentation/
+*.pptx
+*.pptx.bak
+*.docx
+Léo SEGALINI BRIANT*
+Leo SEGALINI BRIANT*
+
+# --- Specs / plans internes (hors runtime) ---
+docs/superpowers/
+
+# --- Refs design & archives hors parcours ---
+stitch_refonte_logiciel_hospitalier/
+python-hf-notebook/
+notebooks/_archive/

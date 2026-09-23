@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Séjours scorés — CISIA Readmit{% endblock %}
+{% block content %}
+  {% if demo_tutorial|default(false) %}
+  <div class="demo-callout" role="status">
+    <p class="demo-callout-label label-caps">Tutoriel · étape 2</p>
+    <p>
+      {% if a_risque %}
+      Ouvrez le séjour en surbrillance (<kbd>Entrée</kbd> ou clic).
+      {% else %}
+      Activez le filtre <strong>À risque seulement</strong>, ou
+      <a href="/cisia/sejours?a_risque=true">afficher les séjours à risque</a>.
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+
+  <header class="sejours-hero">
+    <div class="sejours-hero-text">
+      <p class="label-caps sejours-kicker">Analyse IA · score sortie</p>
+      <h1 class="display-name">Séjours scorés</h1>
+      <p class="sejours-lead">
+        Sorties domicile triées par risque de réadmission à 30&nbsp;jours.
+        Modèle <strong>{{ data.stats.modele }}</strong> · seuil orienté rappel.
+      </p>
+    </div>
+    <ul class="sejours-kpis" aria-label="Indicateurs">
+      <li class="sejours-kpi">
+        <span class="sejours-kpi-value">{{ data.stats.total_scored }}</span>
+        <span class="sejours-kpi-label">Scorés</span>
+      </li>
+      <li class="sejours-kpi sejours-kpi-alert">
+        <span class="sejours-kpi-value">{{ data.stats.total_at_risk }}</span>
+        <span class="sejours-kpi-label">À risque</span>
+      </li>
+      <li class="sejours-kpi">
+        <span class="sejours-kpi-value">{{ data.stats.filtered }}</span>
+        <span class="sejours-kpi-label">Affichés</span>
+      </li>
+    </ul>
+  </header>
+
+  <form class="sejours-toolbar" method="get" action="/cisia/sejours" role="search">
+    <div class="sejours-search">
+      <span class="material-symbols-outlined sejours-search-icon" aria-hidden="true">search</span>
+      <label class="sr-only" for="q">Rechercher un séjour</label>
+      <input id="q" name="q" type="search" value="{{ q }}"
+             placeholder="ID séjour ou nom de famille…" autocomplete="off">
+    </div>
+    <div class="sejours-filters" role="group" aria-label="Filtres">
+      <label class="sejours-filter-chip">
+        <input type="checkbox" name="a_risque" value="true" {% if a_risque %}checked{% endif %}>
+        <span>À risque seulement</span>
+      </label>
+      <button type="submit" class="btn btn-primary btn-sm">Appliquer</button>
+      {% if q or a_risque %}
+      <a class="btn btn-outline btn-sm" href="/cisia/sejours">Réinitialiser</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if data['items'] %}
+  <ul class="sejours-list" aria-label="Liste des séjours scorés">
+    {% for row in data['items'] %}
+    <li>
+      <a class="sejour-card {% if row.alerte_suivi_renforce %}sejour-card-alert{% endif %}{% if demo_tutorial and loop.first and row.alerte_suivi_renforce %} sejour-card-highlight{% endif %}"
+         href="/cisia/sejours/{{ row.SejourID }}"
+         {% if demo_tutorial and loop.first and row.alerte_suivi_renforce %}
+         data-demo-target="open-sejour"
+         data-demo-hint="{{ demo_spotlight_hint|default('Ouvrir ce séjour à risque') }}"
+         {% endif %}>
+        <div class="sejour-card-body">
+          <div class="sejour-card-head">
+            <h2 class="sejour-card-name">{{ row.NomFamille }}</h2>
+            {% if row.alerte_suivi_renforce %}
+            <span class="status-chip status-chip-watch">Suivi renforcé</span>
+            {% else %}
+            <span class="status-chip status-chip-calm">Standard</span>
+            {% endif %}
+          </div>
+          <p class="sejour-card-meta">
+            <span class="mono-value">{{ row.SejourID }}</span>
+            <span aria-hidden="true">·</span>
+            <span>{{ row.service_libelle }}</span>
+            {% if row.age is not none %}
+            <span aria-hidden="true">·</span>
+            <span>{{ row.age }}&nbsp;ans</span>
+            {% endif %}
+            <span aria-hidden="true">·</span>
+            <span>{{ row.SexeLibelle }}</span>
+          </p>
+          <dl class="sejour-card-details">
+            <div>
+              <dt>Durée</dt>
+              <dd>{% if row.DureeSejour is not none %}{{ row.DureeSejour }}&nbsp;j{% else %}—{% endif %}</dd>
+            </div>
+            <div>
+              <dt>Type</dt>
+              <dd>{{ row.TypeSejour }}</dd>
+            </div>
+            <div>
+              <dt>Sortie</dt>
+              <dd>{{ row.ModeSortie or '—' }}</dd>
+            </div>
+            <div>
+              <dt>GHM</dt>
+              <dd class="mono-value">{{ row.GHM }}</dd>
+            </div>
+          </dl>
+        </div>
+        <div class="sejour-card-score" aria-label="Risque réadmission 30 jours">
+          <span class="sejour-card-score-label label-caps">Risque 30&nbsp;j</span>
+          <span class="sejour-card-score-value {% if row.alerte_suivi_renforce %}is-high{% else %}is-low{% endif %}">
+            {{ '%.0f'|format(row.proba_pct) }}<span class="sejour-card-score-unit">%</span>
+          </span>
+          <div class="sejour-card-track" role="presentation" aria-hidden="true">
+            <span class="sejour-card-fill {% if row.alerte_suivi_renforce %}is-high{% else %}is-low{% endif %}"
+                  style="width: {{ [row.proba_pct, 100]|min }}%"></span>
+            <span class="sejour-card-marker" style="left: {{ row.seuil_pct }}%"></span>
+          </div>
+          <span class="sejour-card-seuil">Seuil {{ '%.0f'|format(row.seuil_pct) }}&nbsp;%</span>
+        </div>
+        <span class="sejour-card-chevron material-symbols-outlined" aria-hidden="true">chevron_right</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="sejours-empty cp-card" role="status">
+    <span class="material-symbols-outlined sejours-empty-icon" aria-hidden="true">search_off</span>
+    <p>Aucun séjour ne correspond à vos critères.</p>
+    <a class="btn btn-outline btn-sm" href="/cisia/sejours">Voir tous les séjours</a>
+  </div>
+  {% endif %}
+
+  {% if data.total > data.page_size %}
+  <nav class="pager sejours-pager" aria-label="Pagination">
+    {% if data.page > 1 %}
+    <a class="btn btn-outline btn-sm"
+       href="/cisia/sejours?q={{ q|urlencode }}&amp;a_risque={{ 'true' if a_risque else '' }}&amp;page={{ data.page - 1 }}">
+      <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+      Précédent
+    </a>
+    {% endif %}
+    <span class="pager-info">Page {{ data.page }} · {{ data.total }} séjour(s)</span>
+    {% if data.page * data.page_size < data.total %}
+    <a class="btn btn-outline btn-sm"
+       href="/cisia/sejours?q={{ q|urlencode }}&amp;a_risque={{ 'true' if a_risque else '' }}&amp;page={{ data.page + 1 }}">
+      Suivant
+      <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+    </a>
+    {% endif %}
+  </nav>
+  {% endif %}
+{% endblock %}

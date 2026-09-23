@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Registre RGPD — CISIA Readmit{% endblock %}
+{% block content %}
+  {% if demo_tutorial|default(false) %}
+  <div class="demo-callout" role="status">
+    <p class="demo-callout-label label-caps">Tutoriel · étape 5</p>
+    <p>
+      Sources <strong>INSEE ajoutées</strong> — traçabilité RGPD. <kbd>Entrée</kbd> pour terminer.
+    </p>
+  </div>
+  {% endif %}
+
+  <header class="registre-hero">
+    <div class="registre-hero-text">
+      <p class="label-caps registre-kicker">RGPD · art.&nbsp;9 · traçabilité</p>
+      <h1 class="display-name">Registre des données</h1>
+      <p class="registre-lead">
+        Chaque variable : origine, sensibilité, usage dans les scores et justification métier.
+        <strong>{{ report.total_all }}</strong> colonnes documentées.
+      </p>
+    </div>
+    <ul class="registre-kpis" aria-label="Synthèse du registre">
+      <li class="registre-kpi">
+        <span class="registre-kpi-value">{{ report.stats.sujet }}</span>
+        <span class="registre-kpi-label">Sujet</span>
+      </li>
+      <li class="registre-kpi registre-kpi-insee">
+        <span class="registre-kpi-value">{{ report.stats.insee }}</span>
+        <span class="registre-kpi-label">INSEE ajouté</span>
+      </li>
+      <li class="registre-kpi">
+        <span class="registre-kpi-value">{{ report.stats.autorise_sortie }}</span>
+        <span class="registre-kpi-label">Autorisées sortie</span>
+      </li>
+      <li class="registre-kpi registre-kpi-exclu">
+        <span class="registre-kpi-value">{{ report.stats.exclu_sortie }}</span>
+        <span class="registre-kpi-label">Exclues sortie</span>
+      </li>
+    </ul>
+  </header>
+
+  <form class="registre-toolbar" method="get" action="/cisia/registre" role="search"
+        {% if demo_tutorial|default(false) %}
+        data-demo-target="registre-filtre"
+        data-demo-hint="{{ demo_spotlight_hint|default('Filtrer les sources INSEE ajoutées') }}"
+        {% endif %}>
+    <div class="registre-origine-tabs" role="group" aria-label="Origine des données">
+      <a class="registre-origine-tab {% if not origine %}is-active{% endif %}"
+         href="/cisia/registre?sensibilite={{ sensibilite|urlencode }}&amp;usage={{ usage|urlencode }}"
+         {% if not origine %}aria-current="true"{% endif %}>Toutes</a>
+      <a class="registre-origine-tab {% if origine == 'sujet' %}is-active{% endif %}"
+         href="/cisia/registre?origine=sujet&amp;sensibilite={{ sensibilite|urlencode }}&amp;usage={{ usage|urlencode }}"
+         {% if origine == 'sujet' %}aria-current="true"{% endif %}>Sujet</a>
+      <a class="registre-origine-tab {% if origine == 'insee_ajoute' %}is-active{% endif %}"
+         href="/cisia/registre?origine=insee_ajoute&amp;sensibilite={{ sensibilite|urlencode }}&amp;usage={{ usage|urlencode }}"
+         {% if origine == 'insee_ajoute' %}aria-current="true"{% endif %}>INSEE ajouté</a>
+      <a class="registre-origine-tab {% if origine == 'derive_affichage' %}is-active{% endif %}"
+         href="/cisia/registre?origine=derive_affichage&amp;sensibilite={{ sensibilite|urlencode }}&amp;usage={{ usage|urlencode }}"
+         {% if origine == 'derive_affichage' %}aria-current="true"{% endif %}>Dérivé affichage</a>
+    </div>
+    <div class="registre-filters">
+      <div class="registre-field">
+        <label for="sensibilite">Sensibilité</label>
+        <select id="sensibilite" name="sensibilite">
+          <option value="">Toutes</option>
+          {% for s in ['identite_directe','sante_art9','proxy_socio','faible','aucune'] %}
+          <option value="{{ s }}" {% if sensibilite == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="registre-field">
+        <label for="usage">Usage score</label>
+        <select id="usage" name="usage">
+          <option value="">Tous</option>
+          <option value="autorise" {% if usage == 'autorise' %}selected{% endif %}>Autorisé</option>
+          <option value="flag_only" {% if usage == 'flag_only' %}selected{% endif %}>Surveillance</option>
+          <option value="exclu" {% if usage == 'exclu' %}selected{% endif %}>Exclu</option>
+        </select>
+      </div>
+      {% if origine %}<input type="hidden" name="origine" value="{{ origine }}">{% endif %}
+      <button type="submit" class="btn btn-primary btn-sm">Appliquer</button>
+      {% if sensibilite or usage or origine %}
+      <a class="btn btn-outline btn-sm" href="/cisia/registre">Réinitialiser</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <p class="registre-count" role="status">
+    <strong>{{ report.total_filtered }}</strong> entrée(s) affichée(s)
+    {% if report.total_filtered != report.total_all %}
+    sur {{ report.total_all }}
+    {% endif %}
+  </p>
+
+  {% if report.file_groups %}
+  <div class="registre-files">
+    {% for group in report.file_groups %}
+    <section class="registre-file" aria-labelledby="registre-file-{{ loop.index }}">
+      <header class="registre-file-head">
+        <span class="material-symbols-outlined registre-file-icon" aria-hidden="true">table_rows</span>
+        <div>
+          <h2 id="registre-file-{{ loop.index }}" class="mono-value">{{ group.fichier }}</h2>
+          <p>{{ group.count }} colonne(s)</p>
+        </div>
+      </header>
+      <ul class="registre-entries">
+        {% for r in group.rows %}
+        <li>
+          <article class="registre-entry origine-{{ r.origine_donnee }}">
+            <header class="registre-entry-head">
+              <h3 class="mono-value">{{ r.colonne }}</h3>
+              <span class="registre-pill registre-pill-{{ r.origine_donnee|replace('_', '-') }}">
+                {{ r.origine_label }}
+              </span>
+            </header>
+            <dl class="registre-entry-meta">
+              <div>
+                <dt>Sensibilité</dt>
+                <dd><span class="registre-tag registre-tag-sens">{{ r.sensibilite_label }}</span></dd>
+              </div>
+              <div>
+                <dt>Score sortie</dt>
+                <dd><span class="registre-tag registre-tag-{{ r.usage_score_sortie }}">{{ r.usage_sortie_label }}</span></dd>
+              </div>
+              <div>
+                <dt>Score télé</dt>
+                <dd><span class="registre-tag registre-tag-{{ r.usage_score_tele }}">{{ r.usage_tele_label }}</span></dd>
+              </div>
+              {% if r.categorie %}
+              <div>
+                <dt>Catégorie</dt>
+                <dd>{{ r.categorie }}</dd>
+              </div>
+              {% endif %}
+            </dl>
+            {% if r.justification_hopital %}
+            <p class="registre-justif">{{ r.justification_hopital }}</p>
+            {% elif r.regle_nettoyage %}
+            <p class="registre-justif registre-justif-muted">{{ r.regle_nettoyage }}</p>
+            {% endif %}
+          </article>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="registre-empty" role="status">
+    <span class="material-symbols-outlined registre-empty-icon" aria-hidden="true">folder_off</span>
+    <p>Aucune entrée ne correspond aux filtres.</p>
+    <a class="btn btn-outline btn-sm" href="/cisia/registre">Voir tout le registre</a>
+  </div>
+  {% endif %}
+
+  <footer class="registre-footer">
+    <p>
+      Secret médical et art.&nbsp;9 RGPD : toute colonne exclue du score ne transite pas dans les features
+      du modèle. Les sources INSEE ajoutées sont traçables séparément du jeu « sujet ».
+    </p>
+    {% if demo_tutorial|default(false) %}
+    <a class="btn btn-primary" href="/cisia">Terminer la démo →</a>
+    {% else %}
+    <a class="btn btn-outline" href="/cisia/biais">Retour aux biais</a>
+    {% endif %}
+  </footer>
+{% endblock %}

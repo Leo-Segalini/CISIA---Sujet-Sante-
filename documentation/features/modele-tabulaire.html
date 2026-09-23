@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modèle tabulaire — CISIA Santé</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="Navigation documentation">
+      <a href="../index.html">Accueil</a>
+      <a href="fondation-donnees.html">Fondation données</a>
+      <a href="modele-tabulaire.html" aria-current="page">Modèle tabulaire</a>
+      <a href="../security/access-control.html">Accès et sécurité</a>
+    </nav>
+    <main>
+      <h1>Modèle tabulaire</h1>
+      <p>Version 0.1 — 2026-08-24 — entraînement 100 % local, données synthétiques.</p>
+      <h2>Choix d’algorithme</h2>
+      <ul>
+        <li><strong>Baseline :</strong> régression logistique (imputation, one-hot, standardisation, classes équilibrées).</li>
+        <li><strong>Boosting :</strong> <code>HistGradientBoostingClassifier</code> (sklearn), profondeur 4. LightGBM natif écarté : bibliothèque <code>libomp</code> absente sur ce Mac.</li>
+        <li><strong>Modèle retenu :</strong> celui qui a le meilleur PR-AUC sur le <em>test</em> (ici : logistique).</li>
+      </ul>
+      <h2>Seuil</h2>
+      <p>Maximisation du F2 (β=2) sur la validation uniquement. Objectif hôpital : limiter les réadmissions non détectées.</p>
+      <h2>Lancer</h2>
+      <pre><code>PYTHONPATH=. python scripts/run_pipeline.py
+PYTHONPATH=. python scripts/train_models.py</code></pre>
+      <p>Artefacts : <code>models/*_metrics.json</code>, <code>*_biais.csv</code>, <code>*_shap.csv</code>. Les <code>.joblib</code> restent hors git.</p>
+    </main>
+  </div>
+</body>
+</html>

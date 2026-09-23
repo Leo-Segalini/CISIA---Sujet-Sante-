@@ -152,9 +152,96 @@ def main() -> None:
                     "fichier_source": name,
                     "colonne": col,
                     "grain": GRAIN_BY_FILE[name],
+                    "origine_donnee": "sujet",
                     **meta,
                 }
             )
+    # Compléments INSEE (fichier séparé, hors sujet)
+    insee_cols = [
+        (
+            "INSEE_ajoute_CodeCommune",
+            "flag_only",
+            "faible",
+            "Code Officiel Géographique ; jointure territoriale, hors score ML actuel.",
+        ),
+        (
+            "INSEE_ajoute_PopulationLegale",
+            "autorise",
+            "proxy_socio",
+            "Population légale INSEE (agrégée) pour contextualiser le territoire, distincte de PopulationCommune du sujet.",
+        ),
+        (
+            "INSEE_ajoute_PartPlus65Ans_pct",
+            "autorise",
+            "proxy_socio",
+            "Part des 65 ans et plus (INSEE, agrégée) : proxy de vieillissement territorial pour cibler l'accompagnement.",
+        ),
+        (
+            "INSEE_ajoute_Departement",
+            "flag_only",
+            "faible",
+            "Libellé département INSEE ; descriptif.",
+        ),
+        (
+            "INSEE_ajoute_Region",
+            "flag_only",
+            "faible",
+            "Libellé région INSEE ; descriptif.",
+        ),
+        (
+            "INSEE_ajoute_EcartPop_vs_sujet",
+            "flag_only",
+            "faible",
+            "Écart PopulationCommune (sujet) − population INSEE : audit qualité pédagogique.",
+        ),
+        (
+            "INSEE_ajoute_Millesime",
+            "exclu",
+            "aucune",
+            "",
+        ),
+    ]
+    for col, usage, sens, justif in insee_cols:
+        rows.append(
+            {
+                "fichier_source": "territoire_insee_complements.csv",
+                "colonne": col,
+                "grain": "commune",
+                "categorie": "territoire",
+                "sensibilite": sens,
+                "usage_score_sortie": usage,
+                "usage_score_tele": usage,
+                "justification_hopital": justif,
+                "risque_principal": "biais" if sens == "proxy_socio" else "qualite",
+                "regle_nettoyage": "fichier data/external/ ; préfixe INSEE_ajoute_ ; sujet non modifié",
+                "origine_donnee": "insee_ajoute",
+            }
+        )
+    for col, sens, usage, justif in [
+        ("NomFamille", "identite_directe", "exclu", ""),
+        ("Etage", "faible", "exclu", ""),
+        ("Chambre", "faible", "exclu", ""),
+        ("Lit", "faible", "exclu", ""),
+    ]:
+        rows.append(
+            {
+                "fichier_source": "affichage_soignant",
+                "colonne": col,
+                "grain": "sejour",
+                "categorie": "identite" if col == "NomFamille" else "parcours",
+                "sensibilite": sens,
+                "usage_score_sortie": usage,
+                "usage_score_tele": usage,
+                "justification_hopital": justif,
+                "risque_principal": "secret_medical" if col == "NomFamille" else "none",
+                "regle_nettoyage": (
+                    "Nom de famille seul dérivé de NomPrenom pour l’écran soignant ; exclu du score ML"
+                    if col == "NomFamille"
+                    else "Localisation fictive stable pour la démo hôpital ; hors CSV sujet"
+                ),
+                "origine_donnee": "derive_affichage",
+            }
+        )
     out = pd.DataFrame(rows, columns=REGISTRE_COLUMNS)
     dest = paths.registres / "registre_colonnes.csv"
     out.to_csv(dest, index=False)

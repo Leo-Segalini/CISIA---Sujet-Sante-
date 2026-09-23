@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord — CISIA Readmit{% endblock %}
+{% block content %}
+  <header class="cisia-hero">
+    <p class="cisia-kicker label-caps">Module Readmit{% if demo_tutorial|default(false) %} · tutoriel actif{% endif %}</p>
+    <h1 class="display-name">Risque de réadmission à 30&nbsp;jours</h1>
+    <p class="lead">
+      Priorisez les sorties à domicile nécessitant un suivi renforcé.
+      Score tabulaire + justification locale sur CR masqué.
+    </p>
+    {% if demo_tutorial|default(false) %}
+    <p class="process-hint" role="status">
+      <strong>Tutoriel :</strong> appuyez sur <kbd>Entrée</kbd> à chaque étape
+      (première connexion uniquement).
+    </p>
+    {% else %}
+    <p class="process-hint process-hint-quiet" role="status">
+      <form method="post" action="/cisia/demo/start" class="inline-tuto-form">
+        <button type="submit" class="link-btn">Relancer le tutoriel guidé</button>
+      </form>
+      pour une présentation salon (5 étapes, touche Entrée).
+    </p>
+    {% endif %}
+  </header>
+
+  <section class="metrics-strip" aria-label="Indicateurs du modèle">
+    <div class="metric">
+      <span class="metric-label">Séjours scorés</span>
+      <strong class="metric-value">{{ overview.n_sejours }}</strong>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Prévalence réadmission</span>
+      <strong class="metric-value">{{ '%.1f'|format(overview.prevalence * 100) }}&nbsp;%</strong>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Modèle retenu</span>
+      <strong class="metric-value">{{ overview.modele_retenu }}</strong>
+    </div>
+    <div class="metric">
+      <span class="metric-label">LLM local</span>
+      <strong class="metric-value">{{ 'oui' if overview.llm_disponible else 'extractif' }}</strong>
+      {% if overview.llm_modele %}<span class="metric-sub">{{ overview.llm_modele }}</span>{% endif %}
+    </div>
+  </section>
+
+  {% if overview.metrics_test %}
+  <details class="metrics-details cp-card">
+    <summary>Voir les métriques test (ROC, PR, F2, seuil)</summary>
+    <ul class="metrics-list">
+      <li>ROC-AUC : <strong class="mono-value">{{ '%.3f'|format(overview.metrics_test.roc_auc) }}</strong></li>
+      <li>PR-AUC : <strong class="mono-value">{{ '%.3f'|format(overview.metrics_test.pr_auc) }}</strong></li>
+      <li>Rappel : <strong class="mono-value">{{ '%.3f'|format(overview.metrics_test.recall) }}</strong></li>
+      <li>F2 : <strong class="mono-value">{{ '%.3f'|format(overview.metrics_test.f2) }}</strong></li>
+      <li>Seuil d’alerte : <strong class="mono-value">{{ '%.0f'|format(overview.metrics_test.threshold * 100) }}&nbsp;%</strong>
+        <span class="muted"> (privilégie le rappel)</span></li>
+    </ul>
+  </details>
+  {% endif %}
+
+  <section class="process-board" aria-labelledby="process-titre">
+    <h2 id="process-titre" class="headline-section">Parcours de démonstration</h2>
+    <ol class="process-steps">
+      {% for s in steps %}
+      <li id="etape-{{ s.n }}" class="process-card cp-card {% if loop.first %}process-card-current{% endif %}">
+        <div class="process-card-head">
+          <span class="process-num" aria-hidden="true">{{ s.n }}</span>
+          <div>
+            <h3 class="headline-section">{{ s.titre }}</h3>
+            <p class="process-do"><span class="do-label label-caps">Action</span> {{ s.a_faire }}</p>
+          </div>
+        </div>
+        <p class="process-why muted">{{ s.texte_court }}</p>
+        <a class="btn {% if loop.first %}btn-primary{% else %}btn-outline{% endif %}"
+           href="{{ s.href }}">{{ s.cta }} →</a>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <aside class="privacy-panel compact" aria-label="Protection des données">
+    <p>
+      <strong>Privacy :</strong> justification LLM en local uniquement —
+      conformité secret médical &amp; RGPD art.&nbsp;9.
+    </p>
+  </aside>
+{% endblock %}

@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 
 from src.data.quality import PHYSIO_RANGES, flag_signes_vitaux
+from src.data.vitals import enrich_signes_vitaux
 
 
 FORBIDDEN_COLUMNS = {"NomPrenom", "PersonneAPrevenir"}
@@ -78,7 +79,7 @@ def aggregate_biologie_pre_sortie(
 def aggregate_signes_vitaux_pre_sortie(
     sejours: pd.DataFrame, signes: pd.DataFrame
 ) -> pd.DataFrame:
-    sv = flag_signes_vitaux(signes)
+    sv = enrich_signes_vitaux(signes)
     sv["Horodatage"] = pd.to_datetime(sv["Horodatage"], errors="coerce")
     measure_cols = [c for c in PHYSIO_RANGES if c in sv.columns]
     rows = []
@@ -87,8 +88,7 @@ def aggregate_signes_vitaux_pre_sortie(
         sub = sv.loc[(sv["SejourID"] == sej["SejourID"]) & (sv["Horodatage"] <= sortie)]
         rec: dict = {"SejourID": sej["SejourID"]}
         for col in measure_cols:
-            flag = f"flag_{col}_aberrant"
-            vals = pd.to_numeric(sub.loc[~sub[flag].fillna(False), col], errors="coerce")
+            vals = pd.to_numeric(sub.loc[~sub["exclue"], col], errors="coerce")
             rec[f"sv_{col}_mean"] = float(vals.mean()) if vals.notna().any() else pd.NA
         rows.append(rec)
     return pd.DataFrame(rows)

@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}{{ d.SejourID }} — {{ d.NomFamille }} · CISIA{% endblock %}
+{% block content %}
+  {% if demo_tutorial|default(false) %}
+  <div class="demo-callout" role="status">
+    <p class="demo-callout-label label-caps">Tutoriel · étape 3</p>
+    <p>
+      Lisez le <strong>score</strong>, les <strong>facteurs</strong> et la
+      <strong>justification</strong>. Puis <kbd>Entrée</kbd> pour continuer.
+    </p>
+  </div>
+  {% endif %}
+
+  <a class="sejour-fiche-back" href="/cisia/sejours{% if demo_tutorial %}?a_risque=true{% endif %}">
+    <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+    Retour aux séjours scorés
+  </a>
+
+  <article class="sejour-fiche">
+    <header class="sejour-fiche-hero {% if d.alerte_suivi_renforce %}is-alert{% endif %}"
+            {% if demo_tutorial|default(false) %}
+            data-demo-target="score-panel"
+            data-demo-hint="Score de risque et seuil d’alerte"
+            {% endif %}>
+      <div class="sejour-fiche-hero-main">
+        <p class="label-caps sejour-fiche-kicker">
+          Modèle {{ d.modele_retenu }} · {{ d.service_libelle }}
+        </p>
+        <div class="sejour-fiche-title-row">
+          <h1 class="sejour-fiche-name">{{ d.NomFamille }}</h1>
+          {% if d.alerte_suivi_renforce %}
+          <span class="status-chip status-chip-watch">Suivi renforcé</span>
+          {% else %}
+          <span class="status-chip status-chip-calm">Standard</span>
+          {% endif %}
+        </div>
+        <p class="sejour-fiche-meta">
+          <span class="mono-value">{{ d.SejourID }}</span>
+          {% if d.age is not none %}<span aria-hidden="true">·</span><span>{{ d.age }}&nbsp;ans</span>{% endif %}
+          {% if d.PoidsKg is not none %}<span aria-hidden="true">·</span><span>{{ d.PoidsKg }}&nbsp;kg</span>{% endif %}
+          <span aria-hidden="true">·</span>
+          <span>{{ d.SexeLibelle }} ({{ d.Sexe }})</span>
+          <span aria-hidden="true">·</span>
+          <span>sortie {{ d.admin.ModeSortie or '—' }}</span>
+        </p>
+      </div>
+      <div class="sejour-fiche-score" aria-label="Score de réadmission à 30 jours">
+        <span class="label-caps sejour-fiche-score-label">Risque 30&nbsp;j</span>
+        <p class="sejour-fiche-score-value {% if d.alerte_suivi_renforce %}is-high{% else %}is-low{% endif %}">
+          {{ d.proba_pct }}<span class="sejour-fiche-score-unit">%</span>
+        </p>
+        <p class="sejour-fiche-score-seuil">Seuil d’alerte {{ d.seuil_pct }}&nbsp;%</p>
+        <div class="sejour-fiche-track" role="img"
+             aria-label="Probabilité {{ d.proba_pct }} pour cent, seuil {{ d.seuil_pct }} pour cent">
+          <span class="sejour-fiche-fill {% if d.alerte_suivi_renforce %}is-high{% else %}is-low{% endif %}"
+                style="width: {{ [d.proba_pct, 100]|min }}%"></span>
+          <span class="sejour-fiche-marker" style="left: {{ d.seuil_pct }}%"></span>
+        </div>
+        {% if d.alerte_suivi_renforce %}
+        <p class="sejour-fiche-verdict is-high">Suivi renforcé recommandé</p>
+        {% else %}
+        <p class="sejour-fiche-verdict is-low">Sous le seuil — risque faible</p>
+        {% endif %}
+      </div>
+    </header>
+
+    <p class="sejour-fiche-disclaimer">
+      L’IA estime un risque à partir de dossiers passés ; elle ne remplace pas le médecin.
+      Le seuil ({{ d.seuil_pct }}&nbsp;%) privilégie le rappel pour limiter les ratés.
+    </p>
+
+    <section class="sejour-fiche-section" aria-labelledby="titre-risque-patient">
+      <header class="sejour-fiche-section-head">
+        <span class="sejour-fiche-step" aria-hidden="true">1</span>
+        <div>
+          <h2 id="titre-risque-patient">Pourquoi ce risque de réadmission</h2>
+          <p>Explication personnalisée pour ce séjour.</p>
+        </div>
+      </header>
+      <div class="sejour-fiche-panel">
+        <p class="sejour-fiche-narrative">{{ d.explication_risque_30j }}</p>
+        {% if d.facteurs_risque_patient %}
+        <ul class="sejour-fiche-factors sejour-fiche-factors-local">
+          {% for fact in d.facteurs_risque_patient %}
+          <li class="sejour-fiche-factor sejour-fiche-factor-{{ fact.impact }}"
+              title="Contribution locale {{ '%.3f'|format(fact.shap) }}">
+            <span class="sejour-fiche-factor-rank">{{ loop.index }}</span>
+            <span class="sejour-fiche-factor-name">{{ fact.libelle }}</span>
+            <span class="sejour-fiche-factor-val">{{ fact.valeur }}</span>
+            <span class="sejour-fiche-factor-impact">
+              {% if fact.impact == 'hausse' %}↑ risque{% else %}↓ risque{% endif %}
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="sejour-fiche-section" aria-labelledby="titre-shap">
+      <header class="sejour-fiche-section-head">
+        <span class="sejour-fiche-step" aria-hidden="true">2</span>
+        <div>
+          <h2 id="titre-shap">Facteurs globaux (population)</h2>
+          <p>Variables les plus influentes — valeur du séjour · importance |SHAP|.</p>
+        </div>
+      </header>
+      <div class="sejour-fiche-panel">
+        {% if d.top_shap_global %}
+        <ul class="sejour-fiche-factors">
+          {% for fact in d.top_shap_global %}
+          {% set val = fact.valeur %}
+          {% if not val or val == '—' %}
+            {% if d.valeurs_sejour is defined and fact.feature in d.valeurs_sejour %}
+              {% set raw = d.valeurs_sejour[fact.feature] %}
+              {% if raw is number and raw == (raw|int) %}
+                {% set val = raw|int %}
+              {% elif raw is number %}
+                {% set val = '%.1f'|format(raw) %}
+              {% else %}
+                {% set val = raw %}
+              {% endif %}
+            {% else %}
+              {% set val = '—' %}
+            {% endif %}
+          {% endif %}
+          <li class="sejour-fiche-factor" title="Importance |SHAP| {{ '%.3f'|format(fact.mean_abs_shap) }}">
+            <span class="sejour-fiche-factor-rank">{{ loop.index }}</span>
+            <span class="sejour-fiche-factor-name">{{ fact.libelle or fact.feature }}</span>
+            <span class="sejour-fiche-factor-val">{{ val }}</span>
+            <span class="sejour-fiche-factor-mag">{{ '%.2f'|format(fact.mean_abs_shap) }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="sejour-fiche-muted">Fichier SHAP non disponible — relancer l’entraînement.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <div class="sejour-fiche-split">
+      <section class="sejour-fiche-section sejour-fiche-section-accent" aria-labelledby="titre-justif">
+        <header class="sejour-fiche-section-head">
+          <span class="sejour-fiche-step" aria-hidden="true">3</span>
+          <div>
+            <h2 id="titre-justif">Justification</h2>
+            <span class="sejour-fiche-pill">{{ d.justification_backend }}</span>
+          </div>
+        </header>
+        <div class="sejour-fiche-panel sejour-fiche-panel-quote">
+          <blockquote>{{ d.justification }}</blockquote>
+          <p class="sejour-fiche-note">Texte généré localement à partir du CR masqué (garde-fous anti-hallucination).</p>
+        </div>
+      </section>
+
+      <section class="sejour-fiche-section" aria-labelledby="titre-cr">
+        <header class="sejour-fiche-section-head">
+          <span class="sejour-fiche-step" aria-hidden="true">4</span>
+          <div>
+            <h2 id="titre-cr">Compte-rendu masqué</h2>
+            <span class="sejour-fiche-pill sejour-fiche-pill-muted">Source dossier</span>
+          </div>
+        </header>
+        <div class="sejour-fiche-panel sejour-fiche-panel-cr">
+          <p class="mono-value">{{ d.compte_rendu_masque or 'Aucune note.' }}</p>
+          <p class="sejour-fiche-note">Identité remplacée par <code>[PATIENT]</code> — non envoyé sur Internet.</p>
+        </div>
+      </section>
+    </div>
+
+    <section class="sejour-fiche-section" aria-labelledby="titre-ctx">
+      <header class="sejour-fiche-section-head">
+        <span class="sejour-fiche-step" aria-hidden="true">5</span>
+        <div>
+          <h2 id="titre-ctx">Contexte du séjour</h2>
+        </div>
+      </header>
+      <div class="sejour-fiche-panel">
+        <dl class="sejour-fiche-ctx">
+          <div>
+            <dt>Admission</dt>
+            <dd>{{ d.admin.DateAdmission or '—' }}</dd>
+          </div>
+          <div>
+            <dt>Sortie</dt>
+            <dd>{{ d.admin.DateSortie or '—' }}</dd>
+          </div>
+          <div>
+            <dt>Durée</dt>
+            <dd>{% if d.admin.DureeSejour is not none %}{{ d.admin.DureeSejour }}&nbsp;j{% else %}—{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Type</dt>
+            <dd>{{ d.admin.TypeSejour or '—' }}</dd>
+          </div>
+          <div>
+            <dt>GHM</dt>
+            <dd class="mono-value">{{ d.admin.GHM or '—' }}</dd>
+          </div>
+          <div>
+            <dt>Mode de sortie</dt>
+            <dd>{{ d.admin.ModeSortie or '—' }}</dd>
+          </div>
+          <div>
+            <dt>Diagnostics</dt>
+            <dd>{% if d.n_diag is not none %}{{ d.n_diag }}{% else %}—{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Prescriptions</dt>
+            <dd>{% if d.n_meds is not none %}{{ d.n_meds }}{% else %}—{% endif %}</dd>
+          </div>
+        </dl>
+        <div class="sejour-fiche-antecedents">
+          <span class="sejour-fiche-muted">Antécédents</span>
+          <p>{{ d.Antecedents }}</p>
+        </div>
+      </div>
+    </section>
+
+    {% if d.territoire %}
+    <section class="sejour-fiche-section" aria-labelledby="titre-terr">
+      <header class="sejour-fiche-section-head">
+        <span class="sejour-fiche-step" aria-hidden="true">6</span>
+        <div>
+          <h2 id="titre-terr">Territoire</h2>
+          <p>Sujet vs INSEE ajouté (transparence des sources).</p>
+        </div>
+      </header>
+      <div class="sejour-fiche-territoire">
+        <div class="sejour-fiche-territoire-card">
+          <h3>Données du sujet</h3>
+          <ul>
+            <li>Population : {% if d.territoire.PopulationCommune_sujet is not none %}{{ '%.0f'|format(d.territoire.PopulationCommune_sujet) }}{% else %}—{% endif %}</li>
+            <li>Indice de défavorisation : {% if d.territoire.IndiceDefavorisation is not none %}{{ '%.3f'|format(d.territoire.IndiceDefavorisation) }}{% else %}—{% endif %}</li>
+            <li>Densité médicale : {% if d.territoire.DensiteMedicale is not none %}{{ '%.1f'|format(d.territoire.DensiteMedicale) }}{% else %}—{% endif %}</li>
+          </ul>
+        </div>
+        <div class="sejour-fiche-territoire-card sejour-fiche-territoire-insee">
+          <h3>INSEE ajouté</h3>
+          <ul>
+            <li>Code commune : {{ d.territoire.INSEE_ajoute_CodeCommune or '—' }}</li>
+            <li>Population légale : {% if d.territoire.INSEE_ajoute_PopulationLegale is not none %}{{ '%.0f'|format(d.territoire.INSEE_ajoute_PopulationLegale) }}{% else %}—{% endif %}</li>
+            <li>Part 65 ans et + : {% if d.territoire.INSEE_ajoute_PartPlus65Ans_pct is not none %}{{ '%.1f'|format(d.territoire.INSEE_ajoute_PartPlus65Ans_pct) }}&nbsp;%{% else %}—{% endif %}</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <footer class="sejour-fiche-actions">
+      {% if demo_tutorial|default(false) %}
+      <a class="btn btn-primary" href="/cisia/biais">Étape suivante — Biais →</a>
+      {% else %}
+      <a class="btn btn-outline" href="/cisia/biais">Voir les biais du modèle</a>
+      {% endif %}
+      <a class="btn btn-outline" href="/cisia/sejours/{{ d.SejourID }}/export.pdf" download>Télécharger PDF</a>
+      <a class="btn btn-outline" href="/cisia/sejours/{{ d.SejourID }}/print" target="_blank" rel="noopener">Imprimer</a>
+      <a class="btn-ghost" href="/soignant/sejours/{{ d.SejourID }}">Fiche soignant</a>
+    </footer>
+  </article>
+{% endblock %}

@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}{{ d.NomFamille }}{% if d.Prenom and d.Prenom != '—' %} {{ d.Prenom }}{% endif %} — Ch. {{ d.chambre }}{{ d.lit }}{% endblock %}
+{% block content %}
+<section class="fiche-patient-page">
+  <div class="fiche-patient-top">
+    <a class="back-cap" href="/soignant">
+      <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+      Retour aux étages
+    </a>
+    <a class="btn btn-primary btn-sm fiche-patient-cisia-link" href="/cisia/sejours/{{ d.SejourID }}">
+      Voir la fiche CISIA
+    </a>
+  </div>
+
+  <p class="fiche-patient-ward label-caps">{{ d.poste }} · {{ d.aile }} · {{ d.uf }}</p>
+
+  <header class="fiche-patient-hero">
+    <div class="fiche-patient-identity">
+      <div class="fiche-patient-title-row">
+        <h1 class="display-name fiche-patient-name">{{ d.NomFamille }}</h1>
+        <span class="fiche-patient-sexe-badge" aria-label="Sexe {{ d.SexeLibelle }}">{{ d.Sexe }}</span>
+      </div>
+      <p class="fiche-patient-sub">
+        {% if d.Prenom and d.Prenom != '—' %}<span class="fiche-patient-prenom">{{ d.Prenom }}</span> · {% endif %}
+        {{ d.SexeLibelle }}{% if d.age is not none %} · {{ d.age }} ans{% endif %}
+        · chambre <strong>{{ d.chambre }}</strong> lit <strong>{{ d.lit }}</strong>
+        · {{ d.etage_libelle }}
+      </p>
+      <p class="fiche-patient-ids">
+        IPP <span class="mono-value">{{ d.IPP }}</span>
+        · NDA <span class="mono-value">{{ d.SejourID }}</span>
+        · {{ d.ide_equipe }}
+      </p>
+    </div>
+    <aside class="fiche-patient-status cp-card-inner" aria-label="Statut clinique">
+      <div class="fiche-patient-status-item">
+        <span class="label-caps">Service</span>
+        <strong>{{ d.service_libelle }}</strong>
+      </div>
+      <div class="fiche-patient-status-item">
+        <span class="label-caps">NEWS</span>
+        <strong class="fiche-patient-news mono-value">{% if d.score_news is not none %}{{ d.score_news }}{% else %}—{% endif %}</strong>
+      </div>
+      {% if d.alerte_suivi_renforce %}
+      <div class="fiche-patient-status-item fiche-patient-status-risk">
+        <span class="label-caps">Risque 30 j</span>
+        <strong class="mono-value fiche-patient-proba">{{ d.proba_pct }}&nbsp;%</strong>
+      </div>
+      {% endif %}
+    </aside>
+  </header>
+
+  {% if d.alertes_machines %}
+  <div class="alert-banner alert-banner-urgent fiche-patient-alert" role="status">
+    <span class="material-symbols-outlined fiche-patient-alert-icon" aria-hidden="true">warning</span>
+    <p><strong>À faire maintenant :</strong> {{ d.alertes_machines[0].titre }}. {{ d.alertes_machines[0].action }}</p>
+  </div>
+  {% elif d.alerte_suivi_renforce %}
+  <div class="alert-banner alert-banner-watch fiche-patient-alert" role="status">
+    <span class="material-symbols-outlined fiche-patient-alert-icon" aria-hidden="true">notifications_active</span>
+    <p><strong>À la sortie :</strong> ce patient a plus de chances de revenir dans les 30 jours. Prévoir un coup de fil ou une visite à domicile.</p>
+  </div>
+  {% else %}
+  <div class="alert-banner alert-banner-calm fiche-patient-alert" role="status">
+    <span class="material-symbols-outlined fiche-patient-alert-icon" aria-hidden="true">check_circle</span>
+    <p>Pour l’instant, pas de signal d’alarme sur les machines.</p>
+  </div>
+  {% endif %}
+
+  {% if d.consigne %}
+  <p class="fiche-patient-consigne">{{ d.consigne }}</p>
+  {% endif %}
+
+  <div class="fiche-patient-grid">
+    <section class="fiche-patient-card cp-card" aria-labelledby="fiche-titre-sejour">
+      <h2 id="fiche-titre-sejour" class="headline-section">Séjour</h2>
+      <dl class="fiche-kv">
+        <div><dt>Admission</dt><dd class="mono-value">{{ d.admin.DateAdmission or '—' }}</dd></div>
+        <div><dt>Sortie prévue / réalisée</dt><dd class="mono-value">{{ d.admin.DateSortie or '—' }}</dd></div>
+        <div><dt>Durée</dt><dd class="mono-value">{% if d.admin.DureeSejour is not none %}{{ d.admin.DureeSejour }} j{% else %}—{% endif %}</dd></div>
+        <div><dt>Type</dt><dd>{{ d.admin.TypeSejour or '—' }}</dd></div>
+        <div><dt>GHM</dt><dd class="mono-value">{{ d.admin.GHM or '—' }}</dd></div>
+        <div><dt>Mode de sortie</dt><dd>{{ d.admin.ModeSortie or '—' }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="fiche-patient-card cp-card" aria-labelledby="fiche-titre-dossier">
+      <h2 id="fiche-titre-dossier" class="headline-section">Dossier patient</h2>
+      <dl class="fiche-kv">
+        <div><dt>Nom (famille)</dt><dd><strong>{{ d.NomFamille }}</strong></dd></div>
+        <div><dt>Prénom</dt><dd>{{ d.Prenom or '—' }}</dd></div>
+        <div><dt>Sexe</dt><dd>{{ d.SexeLibelle }} ({{ d.Sexe }})</dd></div>
+        <div><dt>Régime</dt><dd>{{ d.RegimeAssurance }}</dd></div>
+        <div><dt>Commune</dt><dd>{{ d.Commune }} ({{ d.CodePostal }})</dd></div>
+        <div class="fiche-kv-full"><dt>Antécédents</dt><dd>{{ d.Antecedents }}</dd></div>
+      </dl>
+    </section>
+  </div>
+
+  <section class="fiche-patient-card cp-card" aria-labelledby="fiche-titre-vitals">
+    <div class="fiche-patient-section-head">
+      <h2 id="fiche-titre-vitals" class="headline-section">Ce que montrent les machines</h2>
+      <p class="muted fiche-patient-trend">
+        Tendance ~1&nbsp;min&nbsp;30&nbsp;: <strong>{{ d.tendance_constantes or 'stable' }}</strong>
+      </p>
+    </div>
+    {% if d.constantes %}
+    <div class="fiche-vitals-grid" id="vitals">
+      <article class="fiche-vital-card">
+        <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">favorite</span>
+        <span class="fiche-vital-label">Pouls</span>
+        <strong class="fiche-vital-value mono-value">{% if d.constantes.FrequenceCardiaque is not none %}{{ '%.0f'|format(d.constantes.FrequenceCardiaque) }}{% else %}—{% endif %}</strong>
+        <span class="fiche-vital-unit">/min</span>
+      </article>
+      <article class="fiche-vital-card">
+        <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">air</span>
+        <span class="fiche-vital-label">Oxygène</span>
+        <strong class="fiche-vital-value mono-value">{% if d.constantes.SpO2 is not none %}{{ '%.0f'|format(d.constantes.SpO2) }}{% else %}—{% endif %}</strong>
+        <span class="fiche-vital-unit">%</span>
+      </article>
+      <article class="fiche-vital-card">
+        <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">monitor_heart</span>
+        <span class="fiche-vital-label">Tension</span>
+        <strong class="fiche-vital-value mono-value fiche-vital-bp">
+          {% if d.constantes.TensionSystolique is not none %}{{ '%.0f'|format(d.constantes.TensionSystolique) }}/{{ '%.0f'|format(d.constantes.TensionDiastolique) }}{% else %}—{% endif %}
+        </strong>
+        <span class="fiche-vital-unit">mmHg</span>
+      </article>
+      <article class="fiche-vital-card">
+        <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">thermometer</span>
+        <span class="fiche-vital-label">Température</span>
+        <strong class="fiche-vital-value mono-value">{% if d.constantes.Temperature is not none %}{{ '%.1f'|format(d.constantes.Temperature) }}{% else %}—{% endif %}</strong>
+        <span class="fiche-vital-unit">°C</span>
+      </article>
+      <article class="fiche-vital-card">
+        <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">pulmonology</span>
+        <span class="fiche-vital-label">Respiration</span>
+        <strong class="fiche-vital-value mono-value">{% if d.constantes.FrequenceRespiratoire is not none %}{{ '%.0f'|format(d.constantes.FrequenceRespiratoire) }}{% else %}—{% endif %}</strong>
+        <span class="fiche-vital-unit">/min</span>
+      </article>
+      <article class="fiche-vital-card fiche-vital-card-news">
+        <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">clinical_notes</span>
+        <span class="fiche-vital-label">NEWS</span>
+        <strong class="fiche-vital-value mono-value">{% if d.score_news is not none %}{{ d.score_news }}{% else %}—{% endif %}</strong>
+        <span class="fiche-vital-unit">pts</span>
+      </article>
+    </div>
+    {% else %}
+    <p class="muted fiche-patient-empty">Pas de capteur simulé pour ce lit.</p>
+    {% endif %}
+
+    {% set hist = d.constantes_historique %}
+    {% if hist and hist.total > 0 %}
+    <div class="vitals-history" data-vitals-history>
+      <div class="vitals-history-head">
+        <p class="vitals-history-meta">
+          <strong>{{ hist.retenues }}</strong> mesure(s) retenue(s) sur {{ hist.total }}
+          {% if hist.exclues > 0 %}
+          · <span class="vitals-history-excluded-count">{{ hist.exclues }} exclue(s)</span> (hors plage ou incohérentes)
+          {% endif %}
+        </p>
+        <label class="vitals-history-toggle check-label">
+          <input type="checkbox" data-vitals-show-excluded>
+          Afficher les mesures exclues
+        </label>
+      </div>
+      <details class="vitals-history-ranges">
+        <summary>Plages physiologiques de référence</summary>
+        <ul class="vitals-ranges-list">
+          {% for col, plage in hist.plages_reference.items() %}
+          <li><span class="label-caps">{{ col }}</span> {{ plage }}</li>
+          {% endfor %}
+        </ul>
+      </details>
+      <div class="table-scroll vitals-history-scroll">
+        <table class="table-demo cp-table vitals-history-table" data-table-cards>
+          <thead>
+            <tr>
+              <th scope="col">ConstanteID</th>
+              <th scope="col">Horodatage</th>
+              <th scope="col" class="num">FC</th>
+              <th scope="col" class="num">TAS</th>
+              <th scope="col" class="num">TAD</th>
+              <th scope="col" class="num">Temp.</th>
+              <th scope="col" class="num">FR</th>
+              <th scope="col" class="num">SpO₂</th>
+              <th scope="col">Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in hist.mesures %}
+            <tr class="vitals-row {% if row.exclue %}vitals-row-excluded{% endif %}"
+                {% if row.exclue %}data-excluded="true" hidden{% endif %}>
+              <td class="mono-value" data-label="ConstanteID">{{ row.ConstanteID }}</td>
+              <td class="mono-value" data-label="Horodatage">{{ row.Horodatage }}</td>
+              <td class="num mono-value" data-label="FC">{% if row.FrequenceCardiaque is not none %}{{ '%.0f'|format(row.FrequenceCardiaque) }}{% else %}—{% endif %}</td>
+              <td class="num mono-value" data-label="TAS">{% if row.TensionSystolique is not none %}{{ '%.0f'|format(row.TensionSystolique) }}{% else %}—{% endif %}</td>
+              <td class="num mono-value" data-label="TAD">{% if row.TensionDiastolique is not none %}{{ '%.0f'|format(row.TensionDiastolique) }}{% else %}—{% endif %}</td>
+              <td class="num mono-value" data-label="Temp.">{% if row.Temperature is not none %}{{ '%.1f'|format(row.Temperature) }}{% else %}—{% endif %}</td>
+              <td class="num mono-value" data-label="FR">{% if row.FrequenceRespiratoire is not none %}{{ '%.0f'|format(row.FrequenceRespiratoire) }}{% else %}—{% endif %}</td>
+              <td class="num mono-value" data-label="SpO₂">{% if row.SpO2 is not none %}{{ '%.0f'|format(row.SpO2) }}{% else %}—{% endif %}</td>
+              <td data-label="Statut">
+                {% if row.exclue %}
+                <span class="vitals-status vitals-status-bad" title="{{ row.motifs_exclusion | join(' · ') }}">Exclue</span>
+                <span class="vitals-motif">{{ row.motifs_exclusion | join(' · ') }}</span>
+                {% else %}
+                <span class="vitals-status vitals-status-ok">Retenue</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+  {% if d.explication_risque_30j %}
+  <section class="fiche-patient-card fiche-patient-risque cp-card" aria-labelledby="fiche-titre-risque">
+    <h2 id="fiche-titre-risque" class="headline-section">Risque de réadmission à 30 jours</h2>
+    <p class="fiche-risque-narrative">{{ d.explication_risque_30j }}</p>
+    {% if d.facteurs_risque_patient %}
+    <ul class="fiche-risque-factors">
+      {% for fact in d.facteurs_risque_patient %}
+      <li class="fiche-risque-factor fiche-risque-{{ fact.impact }}">
+        <span class="fiche-risque-factor-name">{{ fact.libelle }}</span>
+        <span class="fiche-risque-factor-val">{{ fact.valeur }}</span>
+        <span class="fiche-risque-factor-dir">{% if fact.impact == 'hausse' %}↑{% else %}↓{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <a class="table-link" href="/cisia/sejours/{{ d.SejourID }}">Voir le détail CISIA (score {{ d.proba_pct }}&nbsp;%)</a>
+  </section>
+  {% endif %}
+
+  <section class="fiche-patient-card fiche-patient-ia cp-card" aria-labelledby="fiche-titre-ia">
+    <div class="fiche-patient-section-head">
+      <h2 id="fiche-titre-ia" class="headline-section">En mots simples (assistant IA local)</h2>
+      <span class="pill-src">{{ d.justification_backend }}</span>
+    </div>
+    <blockquote class="fiche-patient-justif">{{ d.justification }}</blockquote>
+  </section>
+
+  <footer class="fiche-patient-footer">
+    <p class="muted">
+      Exercice pédagogique avec données inventées. Les constantes évoluent lentement (comme un moniteur d’étage).
+      Cela ne remplace pas le jugement soignant.
+    </p>
+  </footer>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/vitals_history.js" defer></script>
+{% endblock %}

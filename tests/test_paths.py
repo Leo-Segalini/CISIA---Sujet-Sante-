@@ -16,4 +16,5 @@ def test_ensure_data_dirs_creates_tree(tmp_path):
     assert paths.vault.is_dir()
     assert paths.pseudonymise.is_dir()
     assert paths.curated.is_dir()
+    assert paths.models.is_dir()
     assert len(CSV_FILES) == 11
