@@ -20,6 +20,24 @@ SERVICE_LABELS = {
     "Orthopedie": "Orthopédie",
 }
 
+# Monitoring machine en continu (USC / réanimation).
+# Les autres services = saisie infirmière manuelle (pas de branchement live).
+SERVICES_MONITORING_CONTINU: frozenset[str] = frozenset({"SoinsContinus"})
+
+
+def service_est_monitoring_continu(service: str | None) -> bool:
+    """True si le service a des patients branchés (moniteur live)."""
+    if not service:
+        return False
+    return str(service) in SERVICES_MONITORING_CONTINU
+
+
+def libelle_mode_monitoring(service: str | None) -> str:
+    if service_est_monitoring_continu(service):
+        return "Monitoring continu (machines)"
+    return "Saisie infirmière (pas de branchement)"
+
+
 # Service CSV source pour les unités virtuelles (répartition démo)
 SERVICE_DATA_SOURCE: dict[str, str] = {
     "Observation": "Urgences",
@@ -308,6 +326,7 @@ def appliquer_urgence_pedagogique(
         if not r.get("vide")
         and r.get("SejourID")
         and r.get("niveau") not in {"disponible", "a_nettoyer"}
+        and service_est_monitoring_continu(r.get("service_code"))
     ]
     if not candidats:
         return out
@@ -342,6 +361,175 @@ def appliquer_urgence_pedagogique(
         }
         break
     return out
+
+
+def sejour_est_urgence_pedagogique(
+    sejour_id: str,
+    candidats_ids: list[str],
+    *,
+    etage_libelle: str,
+    now: float | None = None,
+) -> tuple[bool, int]:
+    """True si ce séjour est la cible d’urgence pédagogique du cycle (même règle que le board)."""
+    cycle, active, restant = fenetre_urgence_pedagogique(now)
+    if not active or not candidats_ids:
+        return False, restant
+    # Pas d’urgence machine pédagogique hors monitoring continu
+    return str(sejour_id) == str(
+        candidats_ids[
+            int(hashlib.sha256(f"{etage_libelle}|cycle|{cycle}".encode()).hexdigest(), 16)
+            % len(candidats_ids)
+        ]
+    ), restant
+
+
+def appliquer_vitals_urgence_pedagogique(vitals: dict[str, Any]) -> dict[str, Any]:
+    """Même forçage SpO2/FR que le plan d’étage (toast ALERT)."""
+    out = dict(vitals or {})
+    out["SpO2"] = 89
+    out["FrequenceRespiratoire"] = max(int(out.get("FrequenceRespiratoire") or 16), 22)
+    return out
+
+
+def statut_constantes_alerte(vitals: dict[str, Any]) -> dict[str, bool]:
+    """Par constante : True si hors seuil soignant (ALERT_RULES)."""
+    flags: dict[str, bool] = {}
+    for key, (_label, _unit, low, high, _adj) in ALERT_RULES.items():
+        val = vitals.get(key)
+        if val is None:
+            flags[key] = False
+            continue
+        flags[key] = (low is not None and val < low) or (high is not None and val > high)
+    return flags
+
+
+_CHART_SERIES = (
+    ("SpO2", "Oxygène (SpO₂)", "%", 92.0),
+    ("FrequenceCardiaque", "Pouls", "/min", None),
+    ("FrequenceRespiratoire", "Respiration", "/min", None),
+    ("Temperature", "Température", "°C", None),
+    ("TensionSystolique", "Tension systolique", "mmHg", None),
+    ("PoidsKg", "Poids", "kg", None),
+)
+
+# Fenêtre moniteur interactif : 1 point / tick (5 s) → ~4 min visibles
+MONITEUR_N_POINTS = 48
+MONITEUR_STEP_TICKS = 1
+MONITEUR_REFRESH_SEC = TICK_SECONDS
+
+
+def _label_temps_relatif(seconds_ago: int) -> str:
+    if seconds_ago <= 0:
+        return "maintenant"
+    m, s = divmod(max(0, int(seconds_ago)), 60)
+    if m == 0:
+        return f"−{s}s"
+    return f"−{m}:{s:02d}"
+
+
+def series_evolution_live(
+    profil: dict[str, Any] | None,
+    *,
+    tick: int,
+    n_points: int = MONITEUR_N_POINTS,
+    step_ticks: int = MONITEUR_STEP_TICKS,
+    vitals_override: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Séries moniteur pour graphiques interactifs (Chart.js).
+
+    Un point toutes les ``step_ticks`` (défaut 5 s) — la courbe bouge à chaque
+    rafraîchissement de la fiche.
+    """
+    if not profil:
+        return []
+    t = int(tick)
+    step = max(1, int(step_ticks))
+    labels: list[str] = []
+    series: dict[str, list[float]] = {k: [] for k, *_ in _CHART_SERIES}
+    for i in range(n_points - 1, -1, -1):
+        sample_tick = max(0, t - i * step)
+        seconds_ago = (t - sample_tick) * TICK_SECONDS
+        labels.append(_label_temps_relatif(seconds_ago))
+        snap = snapshot_constantes(profil, tick=sample_tick)
+        if i == 0 and vitals_override:
+            snap = {**snap, **vitals_override}
+        for key, *_ in _CHART_SERIES:
+            v = snap.get(key)
+            if v is not None:
+                series[key].append(float(v))
+            else:
+                series[key].append(None)
+
+    charts: list[dict[str, Any]] = []
+    for key, label, unit, seuil in _CHART_SERIES:
+        vals = series.get(key) or []
+        clean = [v for v in vals if v is not None]
+        if len(clean) < 2:
+            continue
+        charts.append(
+            {
+                "key": key,
+                "label": label,
+                "unit": unit,
+                "seuil": seuil,
+                "labels": labels,
+                "values": vals,
+                "n": len(clean),
+                "dernier": clean[-1],
+                "min": min(clean),
+                "max": max(clean),
+            }
+        )
+    return charts
+
+
+def series_evolution_from_historique(
+    historique: dict[str, Any] | None,
+    *,
+    max_points: int = 40,
+) -> list[dict[str, Any]]:
+    """Séries chronologiques (mesures retenues du dossier) — format interactif."""
+    if not historique:
+        return []
+    mesures = list(historique.get("mesures_retenues") or historique.get("mesures") or [])
+    mesures = [m for m in mesures if not m.get("exclue")]
+    mesures = list(reversed(mesures))
+    if len(mesures) > max_points:
+        step = max(1, len(mesures) // max_points)
+        mesures = mesures[::step][-max_points:]
+    if len(mesures) < 2:
+        return []
+
+    labels = []
+    for i, m in enumerate(mesures):
+        t = str(m.get("Horodatage") or "")
+        labels.append(t[11:16] if len(t) >= 16 else (t or f"#{i + 1}"))
+
+    charts: list[dict[str, Any]] = []
+    for key, label, unit, seuil in _CHART_SERIES:
+        vals: list[float | None] = []
+        for m in mesures:
+            v = m.get(key)
+            vals.append(float(v) if v is not None else None)
+        clean = [v for v in vals if v is not None]
+        if len(clean) < 2:
+            continue
+        charts.append(
+            {
+                "key": key,
+                "label": label,
+                "unit": unit,
+                "seuil": seuil,
+                "labels": labels,
+                "values": vals,
+                "n": len(clean),
+                "dernier": clean[-1],
+                "min": min(clean),
+                "max": max(clean),
+            }
+        )
+    return charts
 
 
 def _chambre_numero(etage: int, room_index: int) -> str:

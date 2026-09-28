@@ -1,4 +1,5 @@
-from src.data.paths import CSV_FILES, ProjectPaths, get_project_root
+from src.data.paths import ProjectPaths, get_project_root
+from src.data.registry import CSV_FILES
 
 
 def test_project_root_contains_sources():

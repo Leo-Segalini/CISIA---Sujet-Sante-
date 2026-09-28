@@ -8,6 +8,32 @@ from src.data.vitals import enrich_signes_vitaux
 
 FORBIDDEN_COLUMNS = {"NomPrenom", "PersonneAPrevenir"}
 
+# Tokens stables du sujet (hors « Aucune ») — flags binaires pour le score.
+PATHOLOGIES_FLAGS = (
+    "BPCO",
+    "Diabete",
+    "HTA",
+    "InsuffisanceCardiaque",
+    "InsuffisanceRenale",
+    "Hyperlipidemie",
+)
+
+# Codes ATC présents dans medications.csv du sujet.
+ATC_CODES = (
+    "A02",
+    "A10",
+    "B01",
+    "C01",
+    "C03",
+    "C07",
+    "C09",
+    "H02",
+    "J01",
+    "M01",
+    "N02",
+    "N05",
+)
+
 
 def compute_age_at_admission(patients: pd.DataFrame, sejours: pd.DataFrame) -> pd.Series:
     merged = sejours.merge(
@@ -119,6 +145,64 @@ def join_territoire(
     ]
 
 
+def _parse_pathologies(raw: object) -> set[str]:
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return set()
+    parts = [p.strip() for p in str(raw).split("|") if p.strip()]
+    return {p for p in parts if p and p != "Aucune"}
+
+
+def aggregate_pathologies(patients_pseudo: pd.DataFrame) -> pd.DataFrame:
+    """Encode PathologiesChroniques → compte + flags (analyse retour patient)."""
+    if "PathologiesChroniques" not in patients_pseudo.columns:
+        raise KeyError("PathologiesChroniques manquant dans patients_pseudo")
+    rows = []
+    for _, row in patients_pseudo.iterrows():
+        tokens = _parse_pathologies(row["PathologiesChroniques"])
+        rec: dict = {
+            "PatientID": row["PatientID"],
+            "n_pathologies": len(tokens),
+        }
+        for name in PATHOLOGIES_FLAGS:
+            rec[f"patho_{name}"] = int(name in tokens)
+        rows.append(rec)
+    return pd.DataFrame(rows)
+
+
+def aggregate_medications_detail(
+    sejours: pd.DataFrame, medications: pd.DataFrame
+) -> pd.DataFrame:
+    """ATC + posologie (séjour) — complète n_meds / n_voies pour l'entraînement."""
+    meds = medications.copy()
+    if "DateDebut" in meds.columns:
+        meds["DateDebut"] = pd.to_datetime(meds["DateDebut"], errors="coerce")
+    rows = []
+    for _, sej in sejours.iterrows():
+        sortie = pd.to_datetime(sej["DateSortie"], errors="coerce")
+        sub = meds.loc[meds["SejourID"] == sej["SejourID"]].copy()
+        if "DateDebut" in sub.columns and pd.notna(sortie):
+            sub = sub.loc[sub["DateDebut"].isna() | (sub["DateDebut"] <= sortie)]
+        atc = sub["CodeATC"].dropna().astype(str) if "CodeATC" in sub.columns else pd.Series(dtype=str)
+        poso = (
+            sub["Posologie"].dropna().astype(str)
+            if "Posologie" in sub.columns
+            else pd.Series(dtype=str)
+        )
+        rec: dict = {
+            "SejourID": sej["SejourID"],
+            "n_atc_distinct": int(atc.nunique()),
+            "n_posologies_distinct": int(poso.nunique()),
+            "posologie_a_demande": int(
+                any("demande" in p.casefold() for p in poso.tolist())
+            ),
+        }
+        atc_set = set(atc.tolist())
+        for code in ATC_CODES:
+            rec[f"atc_{code}"] = int(code in atc_set)
+        rows.append(rec)
+    return pd.DataFrame(rows)
+
+
 def _count_pre_sortie(
     sejours: pd.DataFrame,
     events: pd.DataFrame,
@@ -179,6 +263,8 @@ def build_features_score_sortie(
         )
         .reset_index()
     )
+    med_detail = aggregate_medications_detail(base, medications)
+    patho = aggregate_pathologies(patients_pseudo)
 
     terr = join_territoire(patients_pseudo, territoire)
 
@@ -188,6 +274,8 @@ def build_features_score_sortie(
     out = out.merge(n_actes, on="SejourID", how="left")
     out = out.merge(diag_n, on="SejourID", how="left")
     out = out.merge(med_n, on="SejourID", how="left")
+    out = out.merge(med_detail, on="SejourID", how="left")
+    out = out.merge(patho, on="PatientID", how="left")
     out = out.merge(terr, on="PatientID", how="left")
 
     keep = [
@@ -209,13 +297,24 @@ def build_features_score_sortie(
         "n_diag_principal",
         "n_meds",
         "n_voies",
+        "n_atc_distinct",
+        "n_posologies_distinct",
+        "posologie_a_demande",
+        "n_pathologies",
         "IndiceDefavorisation",
         "DensiteMedicale",
         "PopulationCommune",
         "territoire_inconnu",
     ]
-    extra = [c for c in out.columns if c.startswith("bio_") or c.startswith("sv_")]
-    out = out[keep + extra]
+    extra = [
+        c
+        for c in out.columns
+        if c.startswith("bio_")
+        or c.startswith("sv_")
+        or c.startswith("patho_")
+        or c.startswith("atc_")
+    ]
+    out = out[keep + sorted(extra)]
     if not FORBIDDEN_COLUMNS.isdisjoint(out.columns):
         raise AssertionError("Nominatif présent dans les features sortie")
     if any(c.startswith("oc_") for c in out.columns):

@@ -5,7 +5,8 @@ from pathlib import Path
 import pandas as pd
 
 from src.data.load import load_csv
-from src.data.paths import CSV_FILES, ProjectPaths
+from src.data.paths import ProjectPaths
+from src.data.registry import CSV_FILES
 from src.data.territoire import COMPLEMENT_COLUMNS, COMPLEMENT_NAME, complement_path
 
 REGISTRE_COLUMNS = [

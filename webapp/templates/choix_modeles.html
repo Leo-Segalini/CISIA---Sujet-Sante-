@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Choix des modèles — CISIA{% endblock %}
+{% block content %}
+<section class="analyse-page modeles-page">
+  <header class="page-head">
+    <h1 class="headline-section">{{ c.titre }}</h1>
+    <p class="muted">{{ c.contexte_n }}</p>
+  </header>
+
+  <section class="cp-card analyse-block" aria-labelledby="decision-actuelle">
+    <h2 id="decision-actuelle" class="headline-subsection">Décision actuelle — {{ c.decision_actuelle.libelle }}</h2>
+    <p><strong>Pourquoi RF sur ce jeu :</strong> {{ c.decision_actuelle.pourquoi }}</p>
+    <p class="muted">{{ c.decision_actuelle.critere }}</p>
+  </section>
+
+  <section class="cp-card analyse-block" aria-labelledby="histgb-role">
+    <h2 id="histgb-role" class="headline-subsection">HistGB — rôle actuel et grand volume</h2>
+    <p>{{ c.histgb.role_actuel }}</p>
+    <p><strong>Pour une prod à grand volume :</strong> {{ c.histgb.pour_grand_jeu }}</p>
+  </section>
+
+  <div class="modeles-compare" role="group" aria-label="Avantages et inconvénients">
+    <section class="cp-card analyse-block" aria-labelledby="rf-avantages">
+      <h2 id="rf-avantages" class="headline-subsection">Forêt aléatoire</h2>
+      <h3 class="label-caps">Avantages</h3>
+      <ul>
+        {% for a in c.rf.avantages %}<li>{{ a }}</li>{% endfor %}
+      </ul>
+      <h3 class="label-caps">Inconvénients</h3>
+      <ul>
+        {% for a in c.rf.inconvenients %}<li>{{ a }}</li>{% endfor %}
+      </ul>
+    </section>
+    <section class="cp-card analyse-block" aria-labelledby="hgb-avantages">
+      <h2 id="hgb-avantages" class="headline-subsection">Gradient boosting (HistGB)</h2>
+      <h3 class="label-caps">Avantages</h3>
+      <ul>
+        {% for a in c.histgb_detail.avantages %}<li>{{ a }}</li>{% endfor %}
+      </ul>
+      <h3 class="label-caps">Inconvénients</h3>
+      <ul>
+        {% for a in c.histgb_detail.inconvenients %}<li>{{ a }}</li>{% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <section class="cp-card analyse-block" aria-labelledby="regle-decision">
+    <h2 id="regle-decision" class="headline-subsection">Règle de décision</h2>
+    <ol>
+      {% for r in c.regle_de_decision %}<li>{{ r }}</li>{% endfor %}
+    </ol>
+  </section>
+
+  <section class="cp-card analyse-block" aria-labelledby="protocole-split">
+    <h2 id="protocole-split" class="headline-subsection">{{ c.protocole_split.titre }}</h2>
+    <p><strong>{{ c.protocole_split.resume }}</strong></p>
+    <ul class="analyse-kpi" aria-label="Ratios observés">
+      <li><span class="label-caps">Train</span> <strong class="mono-value">{{ c.protocole_split.ratios_cibles.train * 100 | int }}&nbsp;%</strong> <span class="muted">{{ c.protocole_split.ratios_observes_approx.train }}</span></li>
+      <li><span class="label-caps">Validation</span> <strong class="mono-value">{{ c.protocole_split.ratios_cibles.val * 100 | int }}&nbsp;%</strong> <span class="muted">{{ c.protocole_split.ratios_observes_approx.val }}</span></li>
+      <li><span class="label-caps">Test</span> <strong class="mono-value">{{ c.protocole_split.ratios_cibles.test * 100 | int }}&nbsp;%</strong> <span class="muted">{{ c.protocole_split.ratios_observes_approx.test }}</span></li>
+    </ul>
+    <div class="table-scroll">
+      <table class="table-demo cp-table">
+        <thead><tr><th scope="col">Jeu</th><th scope="col">Rôle</th></tr></thead>
+        <tbody>
+          {% for r in c.protocole_split.roles %}
+          <tr><td>{{ r.jeu }}</td><td>{{ r.role }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">{{ c.protocole_split.pas_70_30_simple }}</p>
+  </section>
+
+  <section class="cp-card analyse-block" aria-labelledby="unites-constantes">
+    <h2 id="unites-constantes" class="headline-subsection">{{ c.unites_constantes.titre }}</h2>
+    <p>{{ c.unites_constantes.resume }}</p>
+    <div class="table-scroll">
+      <table class="table-demo cp-table">
+        <thead>
+          <tr>
+            <th scope="col">Mesure</th>
+            <th scope="col">Unité canonique</th>
+            <th scope="col">Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in c.unites_constantes.table %}
+          <tr>
+            <td>{{ row.mesure }}</td>
+            <td class="mono-value">{{ row.unite }}</td>
+            <td class="muted">{{ row.source }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">{{ c.unites_constantes.biologie }}</p>
+  </section>
+</section>
+{% endblock %}

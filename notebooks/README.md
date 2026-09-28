@@ -15,12 +15,14 @@ jupyter notebook notebooks/ --ip=127.0.0.1 --port=8888
 
 Ouvrez **http://127.0.0.1:8888/tree** puis **parcours jury DS** :
 
+0. `00_guide/01_cadre_projet.ipynb` — objectifs, cadre RGPD, cohorte
 1. `01_donnees/01_inventaire_sources.ipynb` — CSV → DataFrames → colonnes
-2. `02_modeles/02_nettoyage_donnees.ipynb` — nettoyage
-3. `02_modeles/03_preparation_modele.ipynb` — features sortie + télé
-4. `02_modeles/04_entrainement_modele.ipynb` — Optuna × 2 scores (30–60 min)
-5. `02_modeles/05_lancement_modele.ipynb` — inférence
-6. `02_modeles/06_reponse_modele.ipynb` — explication / réponse modèle
+2. `01_donnees/05_analyse_donnees.ipynb` — nulls, dates hors séjour, patho↔retour
+3. `02_modeles/02_nettoyage_donnees.ipynb` — nettoyage
+4. `02_modeles/03_preparation_modele.ipynb` — features sortie + télé
+5. `02_modeles/04_entrainement_modele.ipynb` — Optuna × 2 scores (30–60 min)
+6. `02_modeles/05_lancement_modele.ipynb` — inférence
+7. `02_modeles/06_reponse_modele.ipynb` — explication / réponse modèle
 
 > Si la page ne s’ouvre pas : regardez `.run/jupyter.log` ou relancez `./scripts/arrete_environnement.sh` puis `./scripts/lance_environnement.sh`.
 
@@ -32,12 +34,14 @@ Ouvrez **http://127.0.0.1:8888/tree** puis **parcours jury DS** :
 notebooks/
 ├── README.md                          ← ce fichier
 ├── 00_guide/
-│   └── 00_sommaire.ipynb              Index + parcours recommandé
+│   ├── 00_sommaire.ipynb              Index + parcours recommandé
+│   └── 01_cadre_projet.ipynb          Objectifs, cadre RGPD, cohorte
 ├── 01_donnees/                        Pipeline & qualité
 │   ├── 01_inventaire_sources.ipynb    ★ Jury : CSV→DF→colonnes→analyses
 │   ├── 02_qualite_hallucinations.ipynb  ★ Trous, aberrations, incohérences + graphiques
 │   ├── 03_registre_rgpd.ipynb           Sensibilité & usage IA (RGPD)
-│   └── 04_pipeline_donnees.ipynb        Export features curated/
+│   ├── 04_pipeline_donnees.ipynb        Export features curated/
+│   └── 05_analyse_donnees.ipynb         ★ Nulls, temporalité, patho↔retour
 ├── 02_modeles/                          Parcours ML jury + benchmark
 │   ├── 01_benchmark_optuna.ipynb        Deep-dive 5 modèles + Optuna
 │   ├── 02_nettoyage_donnees.ipynb       ★ Nettoyage
@@ -53,7 +57,34 @@ notebooks/
 
 ---
 
-## Parcours recommandé (Run All dans l’ordre)
+## Extensibilité pipeline (registre)
+
+Les sources et étapes sont déclarées dans `src/data/registry.py` + `pipeline_steps.py`.
+**Ajouter un bloc ne nécessite pas de modifier les notebooks** s’ils utilisent le registry.
+
+```python
+# Dans un notebook / module d’extension
+from src.data.registry import PipelineStep, register_pipeline_step, describe_pipeline
+
+def step_mon_bloc(ctx):
+    # ctx.frames / ctx.artifacts / ctx.meta
+    ...
+
+register_pipeline_step(PipelineStep(
+    id="mon_bloc",
+    title="Mon bloc",
+    description="Nouvelle étape",
+    run=step_mon_bloc,
+    phase="features",
+))
+
+describe_pipeline()   # le tableau s’enrichit tout seul
+```
+
+Nouveau CSV : ajouter une `SourceSpec` dans `SOURCES` (registry) + ligne au registre RGPD.
+Vue Jupyter : `from _utils.bootstrap import SOURCES_OVERVIEW, PIPELINE_OVERVIEW`.
+
+---
 
 | # | Notebook | Durée indic. | Objectif |
 |---|----------|--------------|----------|
@@ -91,6 +122,7 @@ Rapport HTML exporté : `data/curated/qualite/rapport_qualite.html`
 | Rapport qualité | `PYTHONPATH=. python scripts/run_quality_report.py` |
 | Benchmark | `PYTHONPATH=. python scripts/run_benchmark.py --optuna` |
 | Déploiement | `PYTHONPATH=. python scripts/train_models.py --optuna` |
+| **Prod hôpital** | `PYTHONPATH=. python scripts/promote_production.py` |
 | Tout (Docker) | `./scripts/lance_environnement.sh` |
 
 ---
@@ -100,6 +132,19 @@ Rapport HTML exporté : `data/curated/qualite/rapport_qualite.html`
 `reference` · `logistic` · `random_forest` · `lightgbm` · `mlp`
 
 Critère : **PR-AUC test** · Seuil : **F2 validation** · Optuna sur RF / LightGBM / MLP.
+
+### Protocoles d’entraînement (comparaison)
+
+```bash
+PYTHONPATH=. python scripts/run_training_protocols.py
+# → models/protocoles/comparaison_protocoles.csv
+```
+
+| Protocole | Rôle |
+|-----------|------|
+| `holdout_patient` | Déploiement (70/15/15) |
+| `cv_patient_k5` | Stabilité (GroupKFold patient) |
+| `cv_stratified_patient_k5` | Stabilité + strate prévalence |
 
 ---
 

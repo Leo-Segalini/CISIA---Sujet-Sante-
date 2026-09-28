@@ -95,58 +95,218 @@
         <div class="fiche-kv-full"><dt>Antécédents</dt><dd>{{ d.Antecedents }}</dd></div>
       </dl>
     </section>
+    </section>
   </div>
 
-  <section class="fiche-patient-card cp-card" aria-labelledby="fiche-titre-vitals">
+  <section class="fiche-patient-card cp-card" aria-labelledby="fiche-titre-meds">
+    <h2 id="fiche-titre-meds" class="headline-section">Médicaments du séjour</h2>
+    {% if d.medicaments %}
+    <div class="table-scroll">
+      <table class="table-demo cp-table" data-table-cards>
+        <thead>
+          <tr>
+            <th scope="col">Médicament</th>
+            <th scope="col">ATC</th>
+            <th scope="col">Posologie</th>
+            <th scope="col">Voie</th>
+            <th scope="col">Début</th>
+            <th scope="col">Fin</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in d.medicaments %}
+          <tr>
+            <td data-label="Médicament"><strong>{{ m.Libelle }}</strong></td>
+            <td class="mono-value" data-label="ATC">{{ m.CodeATC }}</td>
+            <td data-label="Posologie">{{ m.Posologie }}</td>
+            <td data-label="Voie">{{ m.Voie }}</td>
+            <td class="mono-value" data-label="Début">{{ m.DateDebut }}</td>
+            <td class="mono-value" data-label="Fin">{{ m.DateFin }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="muted">Aucune prescription liée à ce séjour dans les données.</p>
+    {% endif %}
+  </section>
+
+  <section class="fiche-patient-card cp-card" aria-labelledby="fiche-titre-vitals" data-fiche-moniteur data-sejour-id="{{ d.SejourID }}" data-refresh-sec="{{ d.moniteur_refresh_seconds or 5 }}" data-monitoring-continu="{{ '1' if d.monitoring_continu else '0' }}">
     <div class="fiche-patient-section-head">
-      <h2 id="fiche-titre-vitals" class="headline-section">Ce que montrent les machines</h2>
+      <h2 id="fiche-titre-vitals" class="headline-section">{% if d.monitoring_continu %}Ce que montrent les machines{% else %}Constantes du patient{% endif %}</h2>
       <p class="muted fiche-patient-trend">
-        Tendance ~1&nbsp;min&nbsp;30&nbsp;: <strong>{{ d.tendance_constantes or 'stable' }}</strong>
+        <span class="pill-src {% if d.monitoring_continu %}pill-src-live{% else %}pill-src-manuel{% endif %}" data-mode-monitoring>{{ d.mode_monitoring or '—' }}</span>
+        {% if d.monitoring_continu %}
+        · Tendance ~1&nbsp;min&nbsp;30&nbsp;: <strong data-moniteur-tendance>{{ d.tendance_constantes or 'stable' }}</strong>
+        {% if d.urgence_pedagogique %}
+        · <span class="vitals-status vitals-status-bad" data-moniteur-urgence>Alerte machine active ({{ d.urgence_restant_s }}&nbsp;s)</span>
+        {% else %}
+        · <span class="vitals-status vitals-status-bad" data-moniteur-urgence hidden>Alerte machine active</span>
+        {% endif %}
+        · <span class="mono-value" data-moniteur-horloge aria-live="polite">Live · {{ d.moniteur_refresh_seconds or 5 }}&nbsp;s</span>
+        {% else %}
+        · Dernière saisie affichée · <strong data-moniteur-tendance>pas de moniteur branché</strong>
+        {% endif %}
       </p>
+      {% if not d.monitoring_continu %}
+      <button type="button" class="btn btn-primary btn-sm" data-open-saisie-vitals>
+        <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
+        Saisir les constantes
+      </button>
+      {% endif %}
     </div>
     {% if d.constantes %}
+    {% set al = d.constantes_alerte or {} %}
     <div class="fiche-vitals-grid" id="vitals">
-      <article class="fiche-vital-card">
+      <article class="fiche-vital-card {% if al.FrequenceCardiaque %}is-alert{% endif %}" data-vital-key="FrequenceCardiaque">
         <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">favorite</span>
         <span class="fiche-vital-label">Pouls</span>
-        <strong class="fiche-vital-value mono-value">{% if d.constantes.FrequenceCardiaque is not none %}{{ '%.0f'|format(d.constantes.FrequenceCardiaque) }}{% else %}—{% endif %}</strong>
+        <strong class="fiche-vital-value mono-value" data-vital-value>{% if d.constantes.FrequenceCardiaque is not none %}{{ '%.0f'|format(d.constantes.FrequenceCardiaque) }}{% else %}—{% endif %}</strong>
         <span class="fiche-vital-unit">/min</span>
+        <span class="fiche-vital-flag" data-vital-flag {% if not al.FrequenceCardiaque %}hidden{% endif %}>Hors seuil</span>
       </article>
-      <article class="fiche-vital-card">
+      <article class="fiche-vital-card {% if al.SpO2 %}is-alert{% endif %}" data-vital-key="SpO2">
         <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">air</span>
         <span class="fiche-vital-label">Oxygène</span>
-        <strong class="fiche-vital-value mono-value">{% if d.constantes.SpO2 is not none %}{{ '%.0f'|format(d.constantes.SpO2) }}{% else %}—{% endif %}</strong>
+        <strong class="fiche-vital-value mono-value" data-vital-value>{% if d.constantes.SpO2 is not none %}{{ '%.0f'|format(d.constantes.SpO2) }}{% else %}—{% endif %}</strong>
         <span class="fiche-vital-unit">%</span>
+        <span class="fiche-vital-flag" data-vital-flag {% if not al.SpO2 %}hidden{% endif %}>Hors seuil (&lt;&nbsp;92&nbsp;%)</span>
       </article>
-      <article class="fiche-vital-card">
+      <article class="fiche-vital-card {% if al.TensionSystolique %}is-alert{% endif %}" data-vital-key="TensionSystolique">
         <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">monitor_heart</span>
         <span class="fiche-vital-label">Tension</span>
-        <strong class="fiche-vital-value mono-value fiche-vital-bp">
+        <strong class="fiche-vital-value mono-value fiche-vital-bp" data-vital-bp>
           {% if d.constantes.TensionSystolique is not none %}{{ '%.0f'|format(d.constantes.TensionSystolique) }}/{{ '%.0f'|format(d.constantes.TensionDiastolique) }}{% else %}—{% endif %}
         </strong>
         <span class="fiche-vital-unit">mmHg</span>
+        <span class="fiche-vital-flag" data-vital-flag {% if not al.TensionSystolique %}hidden{% endif %}>Hors seuil</span>
       </article>
-      <article class="fiche-vital-card">
+      <article class="fiche-vital-card {% if al.Temperature %}is-alert{% endif %}" data-vital-key="Temperature">
         <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">thermometer</span>
         <span class="fiche-vital-label">Température</span>
-        <strong class="fiche-vital-value mono-value">{% if d.constantes.Temperature is not none %}{{ '%.1f'|format(d.constantes.Temperature) }}{% else %}—{% endif %}</strong>
+        <strong class="fiche-vital-value mono-value" data-vital-value>{% if d.constantes.Temperature is not none %}{{ '%.1f'|format(d.constantes.Temperature) }}{% else %}—{% endif %}</strong>
         <span class="fiche-vital-unit">°C</span>
+        <span class="fiche-vital-flag" data-vital-flag {% if not al.Temperature %}hidden{% endif %}>Hors seuil</span>
       </article>
-      <article class="fiche-vital-card">
+      <article class="fiche-vital-card {% if al.FrequenceRespiratoire %}is-alert{% endif %}" data-vital-key="FrequenceRespiratoire">
         <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">pulmonology</span>
         <span class="fiche-vital-label">Respiration</span>
-        <strong class="fiche-vital-value mono-value">{% if d.constantes.FrequenceRespiratoire is not none %}{{ '%.0f'|format(d.constantes.FrequenceRespiratoire) }}{% else %}—{% endif %}</strong>
+        <strong class="fiche-vital-value mono-value" data-vital-value>{% if d.constantes.FrequenceRespiratoire is not none %}{{ '%.0f'|format(d.constantes.FrequenceRespiratoire) }}{% else %}—{% endif %}</strong>
         <span class="fiche-vital-unit">/min</span>
+        <span class="fiche-vital-flag" data-vital-flag {% if not al.FrequenceRespiratoire %}hidden{% endif %}>Hors seuil</span>
       </article>
       <article class="fiche-vital-card fiche-vital-card-news">
         <span class="material-symbols-outlined fiche-vital-icon" aria-hidden="true">clinical_notes</span>
         <span class="fiche-vital-label">NEWS</span>
-        <strong class="fiche-vital-value mono-value">{% if d.score_news is not none %}{{ d.score_news }}{% else %}—{% endif %}</strong>
+        <strong class="fiche-vital-value mono-value" data-news-value>{% if d.score_news is not none %}{{ d.score_news }}{% else %}—{% endif %}</strong>
         <span class="fiche-vital-unit">pts</span>
       </article>
     </div>
     {% else %}
-    <p class="muted fiche-patient-empty">Pas de capteur simulé pour ce lit.</p>
+    <p class="muted fiche-patient-empty">
+      {% if d.monitoring_continu %}
+      Pas de capteur simulé pour ce lit.
+      {% else %}
+      Aucune constante saisie pour l’instant — utilisez « Saisir les constantes ».
+      {% endif %}
+    </p>
+    {% endif %}
+
+    <div class="vitals-charts" aria-label="Évolution des constantes">
+      <div class="vitals-charts-head">
+        <h3 class="headline-subsection">
+          {% if d.monitoring_continu %}Évolution en direct{% else %}Évolution des constantes saisies{% endif %}
+        </h3>
+        <p class="muted vitals-charts-hint">
+          {% if d.monitoring_continu %}
+          2 graphiques par ligne · axes temps / valeur · survol pour le détail ·
+          rafraîchissement automatique toutes les <strong>{{ d.moniteur_refresh_seconds or 5 }}</strong>&nbsp;s
+          (fenêtre ~4&nbsp;min).
+          {% else %}
+          Mesures du dossier et saisies infirmières. Pas de branchement machine —
+          utilisez le bouton <strong>Saisir les constantes</strong>.
+          {% endif %}
+        </p>
+      </div>
+      <div class="vitals-charts-grid" data-vitals-charts-grid>
+        {% for chart in d.constantes_charts or [] %}
+        <figure class="vitals-chart-card" data-chart-key="{{ chart.key }}">
+          <figcaption class="vitals-chart-caption">
+            <span class="vitals-chart-title">{{ chart.label }}</span>
+            <span class="mono-value vitals-chart-last" data-chart-last>{{ '%.1f'|format(chart.dernier) if chart.key == 'Temperature' else '%.0f'|format(chart.dernier) }} {{ chart.unit }}</span>
+          </figcaption>
+          <div class="vitals-chart-canvas-wrap">
+            <canvas
+              id="chart-{{ chart.key }}"
+              role="img"
+              aria-label="{{ chart.label }}, unité {{ chart.unit }}"
+              data-chart-canvas
+            ></canvas>
+          </div>
+        </figure>
+        {% else %}
+        <p class="muted">{% if d.monitoring_continu %}Pas assez de points pour tracer les courbes.{% else %}Aucune courbe pour l’instant — saisissez une première mesure.{% endif %}</p>
+        {% endfor %}
+      </div>
+      <script type="application/json" id="moniteur-series-boot">{{ d.constantes_charts | tojson }}</script>
+    </div>
+
+    {% if not d.monitoring_continu %}
+    <dialog class="vitals-saisie-dialog" data-vitals-saisie-dialog aria-labelledby="vitals-saisie-titre">
+      <form method="dialog" class="vitals-saisie-form" data-vitals-saisie-form>
+        <header class="vitals-saisie-head">
+          <h3 id="vitals-saisie-titre">Saisie des constantes</h3>
+          <button type="submit" value="cancel" class="btn btn-ghost btn-sm" aria-label="Fermer">
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+          </button>
+        </header>
+        <p class="muted vitals-saisie-hint">Saisie rapide IDE — {{ d.service_libelle }} · ch. {{ d.chambre }}{{ d.lit }}</p>
+        <div class="vitals-saisie-grid">
+          <label>
+            <span>Pouls (/min)</span>
+            <input name="FrequenceCardiaque" type="number" inputmode="numeric" min="30" max="220" step="1" placeholder="ex. 78">
+          </label>
+          <label>
+            <span>SpO₂ (%)</span>
+            <input name="SpO2" type="number" inputmode="numeric" min="50" max="100" step="1" placeholder="ex. 97">
+          </label>
+          <label>
+            <span>Tension sys. (mmHg)</span>
+            <input name="TensionSystolique" type="number" inputmode="numeric" min="60" max="250" step="1" placeholder="ex. 128">
+          </label>
+          <label>
+            <span>Tension dia. (mmHg)</span>
+            <input name="TensionDiastolique" type="number" inputmode="numeric" min="30" max="150" step="1" placeholder="ex. 78">
+          </label>
+          <label>
+            <span>Température (°C)</span>
+            <input name="Temperature" type="number" inputmode="decimal" min="34" max="42" step="0.1" placeholder="ex. 36.8">
+          </label>
+          <label>
+            <span>Respiration (/min)</span>
+            <input name="FrequenceRespiratoire" type="number" inputmode="numeric" min="5" max="50" step="1" placeholder="ex. 16">
+          </label>
+          <label>
+            <span>Poids (kg)</span>
+            <input name="PoidsKg" type="number" inputmode="decimal" min="20" max="300" step="0.1" placeholder="ex. 72.5">
+          </label>
+          <label class="vitals-saisie-full">
+            <span>Horodatage</span>
+            <input name="Horodatage" type="datetime-local" data-saisie-horodatage>
+          </label>
+          <label class="vitals-saisie-full">
+            <span>Note (optionnel)</span>
+            <input name="note" type="text" maxlength="200" placeholder="Ex. prise au repos">
+          </label>
+        </div>
+        <p class="vitals-saisie-error" data-saisie-error role="alert" hidden></p>
+        <footer class="vitals-saisie-actions">
+          <button type="submit" value="cancel" class="btn btn-ghost">Annuler</button>
+          <button type="button" class="btn btn-primary" data-saisie-submit>Enregistrer</button>
+        </footer>
+      </form>
+    </dialog>
     {% endif %}
 
     {% set hist = d.constantes_historique %}
@@ -253,5 +413,8 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/vendor/chart.umd.min.js" defer></script>
+<script src="/static/vitals_charts.js" defer></script>
+<script src="/static/vitals_saisie.js" defer></script>
 <script src="/static/vitals_history.js" defer></script>
 {% endblock %}

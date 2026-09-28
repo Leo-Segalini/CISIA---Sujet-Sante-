@@ -1,14 +1,41 @@
 # --- Runtime / secrets ---
 __pycache__/
 *.py[cod]
+*$py.class
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
 .ipynb_checkpoints/
 .venv/
 venv/
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
 .DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
 .run/
 *.log
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+
+# --- Couverture / build Python ---
+htmlcov/
+.coverage
+coverage.xml
+dist/
+build/
+*.egg-info/
+*.egg
 
 # --- Données dérivées (reproductibles via pipeline) ---
 data/raw/
@@ -29,8 +56,16 @@ models/*_biais.csv
 models/*_shap.csv
 models/cr_*.csv
 models/cr_*.json
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.onnx
 
-# --- Outils IDE / agents (hors transfert jury) ---
+# --- Docker local ---
+docker-compose.override.yml
+
+# --- Outils IDE / agents (hors partage public) ---
 .cursor/
 .specify/
 .superpowers/

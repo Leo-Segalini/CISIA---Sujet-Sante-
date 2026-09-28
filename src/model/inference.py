@@ -18,6 +18,13 @@ def predict_proba(
     modele: str,
     X: pd.DataFrame,
 ) -> np.ndarray:
+    # Production hôpital : proba calibrée si le modèle demandé est le retenu
+    if (
+        bundle.get("calibrated") is not None
+        and modele == bundle.get("retenu")
+        and not isinstance(bundle.get("calibrated"), bool)
+    ):
+        return np.asarray(bundle["calibrated"].predict_proba(X)[:, 1])
     if modele == "reference":
         return predict_reference(bundle["reference"], X)
     if modele == "logistic":

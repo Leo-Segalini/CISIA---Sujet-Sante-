@@ -26,8 +26,25 @@ def test_model_catalog_has_core_models():
     assert "reference" in keys
     assert "logistic" in keys
     assert "random_forest" in keys
+    assert "hist_gradient_boosting" in keys
     assert "lightgbm" in keys
     assert "mlp" in keys
+
+
+def test_hist_gradient_boosting_trains(features_sortie: pd.DataFrame):
+    from src.model.prepare import by_split, split_xy
+    from src.model.trainers import (
+        predict_hist_gradient_boosting,
+        train_hist_gradient_boosting,
+    )
+
+    X, y, split = split_xy(features_sortie)
+    X_tr, y_tr = by_split(X, y, split, "train")
+    X_tr, y_tr = X_tr.head(400), y_tr.head(400)
+    art = train_hist_gradient_boosting(X_tr, y_tr)
+    proba = predict_hist_gradient_boosting(art, X_tr.head(20))
+    assert len(proba) == 20
+    assert ((proba >= 0) & (proba <= 1)).all()
 
 
 def test_build_explication_risque_text():

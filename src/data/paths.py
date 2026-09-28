@@ -3,21 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-CSV_FILES = (
-    "patients.csv",
-    "sejours.csv",
-    "historique.csv",
-    "diagnostics.csv",
-    "actes.csv",
-    "biologies.csv",
-    "signes_vitaux.csv",
-    "medications.csv",
-    "comptes_rendus.csv",
-    "objets_connectes.csv",
-    "territoire_insee.csv",
-)
-
 IDENTITY_COLUMNS = ("NomPrenom", "PersonneAPrevenir")
+
+
+def __getattr__(name: str):
+    """Compat : ``CSV_FILES`` vit dans le registre déclaratif."""
+    if name == "CSV_FILES":
+        from src.data.registry import CSV_FILES
+
+        return CSV_FILES
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 @dataclass(frozen=True)

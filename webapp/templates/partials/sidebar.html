@@ -49,6 +49,20 @@
       <p class="sidebar-section-label" id="sidebar-nav-gouvernance">Gouvernance</p>
       <ul class="sidebar-menu" aria-labelledby="sidebar-nav-gouvernance">
         <li>
+          <a href="/cisia/analyse" class="sidebar-link" title="Analyse des données"
+             {% if path == '/cisia/analyse' %}aria-current="page"{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">analytics</span>
+            <span class="sidebar-link-text">Analyse données</span>
+          </a>
+        </li>
+        <li>
+          <a href="/cisia/modeles" class="sidebar-link" title="Choix des modèles RF vs HistGB"
+             {% if path == '/cisia/modeles' %}aria-current="page"{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">psychology</span>
+            <span class="sidebar-link-text">Choix modèles</span>
+          </a>
+        </li>
+        <li>
           <a href="/cisia/biais" class="sidebar-link" title="Audit des biais"
              {% if path == '/cisia/biais' %}aria-current="page"{% endif %}>
             <span class="material-symbols-outlined" aria-hidden="true">balance</span>

@@ -18,7 +18,7 @@
     </nav>
     <main>
       <h1>Webapp de démo locale</h1>
-      <p>Version 0.9.2 — 2026-09-01</p>
+      <p>Version 0.9.4 — 2026-09-28</p>
       <h2>Design system</h2>
       <p>Interface <strong>Clinical Precision</strong> (maquettes Stitch dans <code>stitch_refonte_logiciel_hospitalier/</code>) : sidebar fixe, palette teal <code>#003735</code>, Inter + JetBrains Mono, cartes à bordure légère, badges de statut clinique.</p>
       <h2>Rôle</h2>
@@ -32,6 +32,8 @@
         <li>Fiche CISIA : ordre score → SHAP → justification → CR masqué → contexte → territoire</li>
         <li>Page biais : écarts par sexe / âge / défavorisation</li>
         <li>Sur l’étage : badge proba 30&nbsp;j + lien vers fiche CISIA</li>
+        <li>Fiche patient soignant : monitoring live uniquement en <strong>soins continus</strong> ; ailleurs, constantes saisies manuellement (modale IDE) + historique dossier</li>
+        <li>Fiche patient soignant : constantes alignées sur l’urgence pédagogique (toast ALERT = mêmes SpO₂/FR hors seuil), cartes en <code>is-alert</code>, graphiques d’évolution (sparklines SVG) depuis l’historique CSV</li>
         <li>Redirections : <code>/sejours</code> et <code>/registre</code> → équivalents <code>/cisia/…</code></li>
       </ul>
       <h2>Sécurité</h2>
@@ -60,6 +62,9 @@ PYTHONPATH=. python scripts/run_webapp.py
       <p>Classes CSS dédiées : <code>.jury-*</code> dans <code>webapp/static/styles.css</code>.</p>
       <h2>Changelog</h2>
       <ul>
+        <li>0.9.4 — Page <code>/cisia/analyse</code> : cohorte (décès exclus), nulls/sentinelles, temporalité, pathologies↔retour ; médicaments sur fiches patient</li>
+        <li>0.9.4 — Monitoring live réservé aux soins continus (USC) ; saisie infirmière modale pour les autres services</li>
+        <li>0.9.3 — Graphiques moniteur live Chart.js (2/ligne, axes, légendes, tooltips, polling 5&nbsp;s) ; cohérence toast ALERT ↔ fiche</li>
         <li>0.9.2 — Plan des étages : chaque étage en section dépliable (dropdown) avec badges occupation / urgences</li>
         <li>0.9.2 — Parcours jury : bouton lancement + navigation <kbd>Entrée</kbd> via tutoriel guidé existant</li>
         <li>0.9.2 — Refonte parcours jury : hero KPI, stepper, timeline 5 étapes, encart privacy, footer démo guidée</li>

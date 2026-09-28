@@ -17,8 +17,10 @@ from src.model.prepare import by_split, split_xy
 from src.model.report import write_benchmark_report
 from src.model.train import evaluate_pair, train_logistic
 from src.model.trainers import (
+    predict_hist_gradient_boosting,
     predict_pipeline,
     predict_reference,
+    train_hist_gradient_boosting,
     train_lightgbm,
     train_mlp,
     train_random_forest,
@@ -70,6 +72,13 @@ def model_catalog() -> list[ModelSpec]:
             tunable=True,
         ),
         ModelSpec(
+            "hist_gradient_boosting",
+            "Gradient boosting (HistGB)",
+            train_hist_gradient_boosting,
+            predict_hist_gradient_boosting,
+            tunable=True,
+        ),
+        ModelSpec(
             "lightgbm",
             "LightGBM",
             train_lightgbm,
@@ -98,6 +107,10 @@ def _train_one(
         if tuned_params and spec.tunable:
             if spec.key == "random_forest":
                 artifact = train_random_forest(X_tr, y_tr, params=tuned_params)
+            elif spec.key == "hist_gradient_boosting":
+                artifact = train_hist_gradient_boosting(
+                    X_tr, y_tr, params=tuned_params
+                )
             elif spec.key == "lightgbm":
                 artifact = train_lightgbm(X_tr, y_tr, params=tuned_params)
             elif spec.key == "mlp":

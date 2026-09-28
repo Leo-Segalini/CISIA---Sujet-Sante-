@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Analyse des données — CISIA{% endblock %}
+{% block content %}
+<section class="analyse-page">
+  <header class="page-head">
+    <h1 class="headline-section">Analyse des données</h1>
+    <p class="muted">
+      Synthèse qualité : cohorte d’entraînement, nulls &amp; sentinelles, cohérence temporelle,
+      pathologies associées au retour 30&nbsp;j.
+    </p>
+  </header>
+
+  <section class="cp-card analyse-block" aria-labelledby="analyse-stats-graph">
+    <h2 id="analyse-stats-graph" class="headline-subsection">Synthèse graphique qualité</h2>
+    <p class="muted">
+      Volumes détectés dans les CSV : séjours exclus de l’entraînement, valeurs mal notées
+      (« hallucinations »), aberrantes, et incohérences de dates.
+    </p>
+    <ul class="analyse-kpi" aria-label="Indicateurs qualité">
+      {% for c in a.stats_qualite.categories %}
+      <li>
+        <span class="label-caps">{{ c.label }}</span>
+        <strong class="mono-value">{{ c.n }}</strong>
+        <span class="muted">{{ c.detail }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="analyse-charts" role="group" aria-label="Graphiques qualité des données">
+      <figure class="analyse-chart-fig">
+        <figcaption class="label-caps">Volumes par type d’anomalie</figcaption>
+        <canvas id="chart-qualite-categories" height="220" aria-label="Histogramme des volumes d’anomalies"></canvas>
+      </figure>
+      <figure class="analyse-chart-fig">
+        <figcaption class="label-caps">Mal notés &amp; aberrants par fichier</figcaption>
+        <canvas id="chart-qualite-fichiers" height="280" aria-label="Barres mal notés et aberrants par CSV"></canvas>
+      </figure>
+    </div>
+    <script type="application/json" id="analyse-stats-boot">{{ a.stats_qualite | tojson }}</script>
+  </section>
+
+  <section class="cp-card analyse-block" aria-labelledby="analyse-cohorte">
+    <h2 id="analyse-cohorte" class="headline-subsection">Cohorte d’entraînement</h2>
+    <p><strong>{{ a.cohorte.regle }}</strong></p>
+    <ul class="analyse-kpi">
+      <li><span class="label-caps">Séjours bruts</span> <strong class="mono-value">{{ a.cohorte.n_sejours_bruts }}</strong></li>
+      <li><span class="label-caps">Éligibles (domicile)</span> <strong class="mono-value">{{ a.cohorte.n_eligibles_entrainement }}</strong></li>
+      <li><span class="label-caps">Exclus</span> <strong class="mono-value">{{ a.cohorte.n_exclus }}</strong></li>
+      <li><span class="label-caps">Dont décès exclus</span> <strong class="mono-value">{{ a.cohorte.n_deces_exclus }}</strong></li>
+    </ul>
+    <div class="table-scroll">
+      <table class="table-demo cp-table">
+        <thead><tr><th scope="col">Mode de sortie</th><th scope="col" class="num">N</th><th scope="col">Dans l’entraînement&nbsp;?</th></tr></thead>
+        <tbody>
+          {% for mode, n in a.cohorte.repartition_mode_sortie.items() %}
+          <tr>
+            <td>{{ mode }}</td>
+            <td class="num mono-value">{{ n }}</td>
+            <td>{% if mode == 'Domicile' %}Oui{% else %}Non — exclu{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="cp-card analyse-block" aria-labelledby="analyse-patho">
+    <h2 id="analyse-patho" class="headline-subsection">Pathologies et retour à 30&nbsp;jours</h2>
+    {% if a.pathologies_readmission %}
+    <p class="muted">Taux de réadmission parmi les séjours portant chaque flag pathologie (features curated).</p>
+    <div class="table-scroll">
+      <table class="table-demo cp-table">
+        <thead>
+          <tr>
+            <th scope="col">Pathologie</th>
+            <th scope="col" class="num">N séjours</th>
+            <th scope="col" class="num">Taux retour 30&nbsp;j</th>
+            <th scope="col" class="num">Écart vs global (pts)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in a.pathologies_readmission %}
+          <tr>
+            <td>{{ p.pathologie }}</td>
+            <td class="num mono-value">{{ p.n_sejours }}</td>
+            <td class="num mono-value">{{ p.pct_readmission }}&nbsp;%</td>
+            <td class="num mono-value">{% if p.pct_vs_global > 0 %}+{% endif %}{{ p.pct_vs_global }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="muted">Parquet features absent — lancer la pipeline pour calculer ces taux.</p>
+    {% endif %}
+  </section>
+
+  <section class="cp-card analyse-block" aria-labelledby="analyse-nulls">
+    <h2 id="analyse-nulls" class="headline-subsection">Nulls &amp; valeurs sentinelles (par CSV)</h2>
+    <p class="muted">
+      Sentinelles numériques recherchées : {{ a.sentinelles_reference.numeriques | join(', ') }}.
+      Textes : codes type NA / null / ND…
+    </p>
+    <div class="table-scroll">
+      <table class="table-demo cp-table">
+        <thead>
+          <tr>
+            <th scope="col">Fichier</th>
+            <th scope="col" class="num">Lignes</th>
+            <th scope="col" class="num">Nulls (somme cols)</th>
+            <th scope="col" class="num">Sentinelles</th>
+            <th scope="col" class="num">% null moyen / col</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in a.resume_fichiers %}
+          <tr>
+            <td><strong>{{ f.libelle }}</strong><br><span class="mono-value muted">{{ f.fichier }}</span></td>
+            <td class="num mono-value">{{ f.n_lignes }}</td>
+            <td class="num mono-value">{{ f.n_null_total }}</td>
+            <td class="num mono-value">{{ f.n_sentinelle_total }}</td>
+            <td class="num mono-value">{{ f.pct_null_moyen }}&nbsp;%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <details class="analyse-details">
+      <summary>Détail colonne par colonne</summary>
+      <div class="table-scroll">
+        <table class="table-demo cp-table">
+          <thead>
+            <tr>
+              <th scope="col">Fichier</th>
+              <th scope="col">Colonne</th>
+              <th scope="col" class="num">Null</th>
+              <th scope="col" class="num">% null</th>
+              <th scope="col" class="num">Sentinelle</th>
+              <th scope="col" class="num">% sent.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in a.nulls_sentinelles %}
+            {% if r.n_null > 0 or r.n_sentinelle > 0 %}
+            <tr>
+              <td class="mono-value">{{ r.fichier }}</td>
+              <td>{{ r.colonne }}</td>
+              <td class="num mono-value">{{ r.n_null }}</td>
+              <td class="num mono-value">{{ r.pct_null }}</td>
+              <td class="num mono-value">{{ r.n_sentinelle }}</td>
+              <td class="num mono-value">{{ r.pct_sentinelle }}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <section class="cp-card analyse-block" aria-labelledby="analyse-temps">
+    <h2 id="analyse-temps" class="headline-subsection">Cohérence temporelle</h2>
+    <h3 class="label-caps">Séjours</h3>
+    <ul class="analyse-kpi">
+      <li><span class="label-caps">Sortie avant admission</span> <strong class="mono-value">{{ a.temporalite.sejours.sortie_avant_admission }}</strong></li>
+      <li><span class="label-caps">Durée incohérente</span> <strong class="mono-value">{{ a.temporalite.sejours.duree_incoherente }}</strong> ({{ a.temporalite.sejours.pct_duree_incoherente }}&nbsp;%)</li>
+      <li><span class="label-caps">Admission manquante</span> <strong class="mono-value">{{ a.temporalite.sejours.admission_manquante }}</strong></li>
+      <li><span class="label-caps">Sortie manquante</span> <strong class="mono-value">{{ a.temporalite.sejours.sortie_manquante }}</strong></li>
+    </ul>
+    <h3 class="label-caps">Événements vs fenêtre de séjour</h3>
+    <p class="muted">Une date d’acte / prélèvement / constante hors [admission, sortie] est une incohérence (souvent volontaire dans les données synthétiques pour l’audit).</p>
+    <div class="table-scroll">
+      <table class="table-demo cp-table">
+        <thead>
+          <tr>
+            <th scope="col">Fichier</th>
+            <th scope="col">Colonne date</th>
+            <th scope="col" class="num">Lignes</th>
+            <th scope="col" class="num">Hors séjour</th>
+            <th scope="col" class="num">%</th>
+            <th scope="col" class="num">Avant adm.</th>
+            <th scope="col" class="num">Après sortie</th>
+            <th scope="col">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in a.temporalite.evenements %}
+          <tr>
+            <td class="mono-value">{{ e.fichier }}</td>
+            <td>{{ e.colonne_date }}</td>
+            <td class="num mono-value">{{ e.n_lignes }}</td>
+            <td class="num mono-value">{{ e.n_hors_fenetre_sejour if e.n_hors_fenetre_sejour is not none else '—' }}</td>
+            <td class="num mono-value">{% if e.pct_hors_fenetre_sejour is not none %}{{ e.pct_hors_fenetre_sejour }}&nbsp;%{% else %}—{% endif %}</td>
+            <td class="num mono-value">{{ e.n_avant_admission if e.n_avant_admission is defined else '—' }}</td>
+            <td class="num mono-value">{{ e.n_apres_sortie if e.n_apres_sortie is defined else '—' }}</td>
+            <td class="muted">{{ e.note }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/vendor/chart.umd.min.js" defer></script>
+<script src="/static/analyse_charts.js" defer></script>
+{% endblock %}

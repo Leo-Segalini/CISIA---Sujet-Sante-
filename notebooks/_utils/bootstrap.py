@@ -18,6 +18,12 @@ if str(NOTEBOOKS_DIR) not in sys.path:
     sys.path.insert(0, str(NOTEBOOKS_DIR))
 
 from src.data.paths import ProjectPaths, get_project_root  # noqa: E402
+from src.data.registry import (  # noqa: E402
+    describe_pipeline,
+    list_pipeline_steps,
+    list_sources,
+    sources_dataframe,
+)
 
 paths = ProjectPaths(root=get_project_root())
 
@@ -31,3 +37,8 @@ COLORS = {
     "mal_note": "#ba8c2e",
     "sensibilite": "#2d6765",
 }
+
+# Raccourcis Jupyter : inventaire / pipeline s’adaptent au registre
+PIPELINE_OVERVIEW = describe_pipeline
+SOURCES_OVERVIEW = sources_dataframe
+

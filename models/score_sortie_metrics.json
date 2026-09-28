@@ -3,15 +3,16 @@
   "n_train": 340,
   "n_val": 68,
   "n_test": 72,
-  "retenu": "logistic",
+  "retenu": "random_forest",
   "ranking_test_pr_auc": [
-    "logistic",
     "random_forest",
     "lightgbm",
+    "logistic",
     "mlp",
     "reference"
   ],
   "optuna": true,
+  "calibrated": true,
   "justification_algo": "Splits patient-level identiques pour tous les modèles. Seuil F2 max sur validation. Classement final sur PR-AUC test. Modèles tunables (RF, LightGBM, MLP) : Optuna sur PR-AUC validation.",
   "reference": {
     "modele": "reference",
@@ -41,117 +42,117 @@
     "modele": "logistic",
     "label": "Régression logistique",
     "val": {
-      "roc_auc": 0.8149920255183414,
-      "pr_auc": 0.6157131661442007,
-      "precision": 0.3103448275862069,
-      "recall": 0.8181818181818182,
-      "f2": 0.6164383561643836,
-      "threshold": 0.32499999999999996,
-      "n": 68,
-      "prevalence": 0.16176470588235295
-    },
-    "test": {
-      "roc_auc": 0.8247767857142858,
-      "pr_auc": 0.5969623365932448,
-      "precision": 0.40540540540540543,
-      "recall": 0.9375,
-      "f2": 0.7425742574257426,
-      "threshold": 0.32499999999999996,
-      "n": 72,
-      "prevalence": 0.2222222222222222
-    }
-  },
-  "mlp": {
-    "modele": "mlp",
-    "label": "MLP (réseau de neurones)",
-    "val": {
-      "roc_auc": 0.8086124401913877,
-      "pr_auc": 0.5427347010794343,
-      "precision": 0.3103448275862069,
-      "recall": 0.8181818181818182,
-      "f2": 0.6164383561643836,
+      "roc_auc": 0.7735247208931418,
+      "pr_auc": 0.4777470339427937,
+      "precision": 0.3125,
+      "recall": 0.9090909090909091,
+      "f2": 0.6578947368421053,
       "threshold": 0.15,
       "n": 68,
       "prevalence": 0.16176470588235295
     },
     "test": {
-      "roc_auc": 0.6741071428571429,
-      "pr_auc": 0.3357374163072579,
-      "precision": 0.3548387096774194,
-      "recall": 0.6875,
-      "f2": 0.5789473684210527,
+      "roc_auc": 0.8091517857142858,
+      "pr_auc": 0.4987662819989857,
+      "precision": 0.358974358974359,
+      "recall": 0.875,
+      "f2": 0.6796116504854369,
       "threshold": 0.15,
       "n": 72,
       "prevalence": 0.2222222222222222
-    },
-    "optuna_params": {
-      "hidden_layer_sizes": [
-        96,
-        32
-      ],
-      "alpha": 0.0015829678152237453,
-      "learning_rate_init": 0.001989657749350218
     }
   },
   "random_forest": {
     "modele": "random_forest",
     "label": "Forêt aléatoire",
     "val": {
-      "roc_auc": 0.8165869218500797,
-      "pr_auc": 0.5120810418372583,
-      "precision": 0.36,
+      "roc_auc": 0.8261562998405104,
+      "pr_auc": 0.5368366681165725,
+      "precision": 0.4090909090909091,
       "recall": 0.8181818181818182,
-      "f2": 0.6521739130434783,
+      "f2": 0.6818181818181818,
       "threshold": 0.42499999999999993,
       "n": 68,
       "prevalence": 0.16176470588235295
     },
     "test": {
-      "roc_auc": 0.8314732142857142,
-      "pr_auc": 0.5265525491805918,
-      "precision": 0.45161290322580644,
+      "roc_auc": 0.8638392857142857,
+      "pr_auc": 0.6112020060156028,
+      "precision": 0.5,
       "recall": 0.875,
-      "f2": 0.7368421052631579,
+      "f2": 0.7608695652173914,
       "threshold": 0.42499999999999993,
       "n": 72,
       "prevalence": 0.2222222222222222
     },
     "optuna_params": {
-      "n_estimators": 120,
-      "max_depth": 11,
-      "min_samples_leaf": 18
+      "n_estimators": 240,
+      "max_depth": 10,
+      "min_samples_leaf": 11
+    }
+  },
+  "mlp": {
+    "modele": "mlp",
+    "label": "MLP (réseau de neurones)",
+    "val": {
+      "roc_auc": 0.7400318979266348,
+      "pr_auc": 0.598785598155346,
+      "precision": 0.8571428571428571,
+      "recall": 0.5454545454545454,
+      "f2": 0.5882352941176471,
+      "threshold": 0.27499999999999997,
+      "n": 68,
+      "prevalence": 0.16176470588235295
+    },
+    "test": {
+      "roc_auc": 0.5758928571428571,
+      "pr_auc": 0.33737687652029436,
+      "precision": 0.2857142857142857,
+      "recall": 0.25,
+      "f2": 0.2564102564102564,
+      "threshold": 0.27499999999999997,
+      "n": 72,
+      "prevalence": 0.2222222222222222
+    },
+    "optuna_params": {
+      "hidden_layer_sizes": [
+        112,
+        48
+      ],
+      "alpha": 0.004445148274457075,
+      "learning_rate_init": 0.0005525844773629765
     }
   },
   "lightgbm": {
     "modele": "lightgbm",
     "label": "LightGBM",
     "val": {
-      "roc_auc": 0.7288676236044657,
-      "pr_auc": 0.5322230954716599,
-      "precision": 0.3333333333333333,
-      "recall": 0.7272727272727273,
-      "f2": 0.5882352941176471,
+      "roc_auc": 0.7878787878787878,
+      "pr_auc": 0.4500312358705144,
+      "precision": 0.391304347826087,
+      "recall": 0.8181818181818182,
+      "f2": 0.6716417910447762,
       "threshold": 0.3,
       "n": 68,
       "prevalence": 0.16176470588235295
     },
     "test": {
-      "roc_auc": 0.7734375,
-      "pr_auc": 0.4995190132681684,
-      "precision": 0.5294117647058824,
-      "recall": 0.5625,
-      "f2": 0.5555555555555556,
+      "roc_auc": 0.8169642857142857,
+      "pr_auc": 0.5208243273212482,
+      "precision": 0.56,
+      "recall": 0.875,
+      "f2": 0.7865168539325843,
       "threshold": 0.3,
       "n": 72,
       "prevalence": 0.2222222222222222
     },
     "optuna_params": {
-      "n_estimators": 180,
-      "max_depth": 4,
-      "learning_rate": 0.06825627290049453,
-      "subsample": 0.9158082725319532,
-      "colsample_bytree": 0.9105863222392042,
-      "reg_lambda": 0.7145538328933669
+      "n_estimators": 160,
+      "max_depth": 6,
+      "learning_rate": 0.03242874107773976,
+      "subsample": 0.633748250497978,
+      "colsample_bytree": 0.6815386936424233,
+      "reg_lambda": 1.3566323239562184
     }
   }
 }

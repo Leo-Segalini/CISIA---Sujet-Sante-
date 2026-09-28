@@ -45,6 +45,10 @@ _FEATURE_LABELS: dict[str, str] = {
     "TypeSejour": "Type de séjour",
     "n_meds": "Nombre de prescriptions",
     "n_diag": "Nombre de diagnostics",
+    "n_pathologies": "Nombre de pathologies chroniques",
+    "n_atc_distinct": "Nombre de classes ATC",
+    "n_posologies_distinct": "Nombre de posologies distinctes",
+    "posologie_a_demande": "Posologie à la demande",
     "age_admission": "Âge à l’admission",
     "DensiteMedicale": "Densité médicale (territoire)",
     "IndiceDefavorisation": "Indice de défavorisation",
@@ -61,6 +65,10 @@ def libelle_feature(name: object) -> str:
     key = str(name)
     if key in _FEATURE_LABELS:
         return _FEATURE_LABELS[key]
+    if key.startswith("patho_"):
+        return f"Pathologie : {key[6:].replace('_', ' ')}"
+    if key.startswith("atc_"):
+        return f"Classe ATC {key[4:]}"
     # sv_Xxx_mean → lisible
     if key.startswith("sv_") and key.endswith("_mean"):
         mid = key[3:-5].replace("_", " ")

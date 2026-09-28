@@ -8,7 +8,12 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score
 
-from src.model.trainers import train_lightgbm, train_mlp, train_random_forest
+from src.model.trainers import (
+    train_hist_gradient_boosting,
+    train_lightgbm,
+    train_mlp,
+    train_random_forest,
+)
 
 
 def _pr_auc(y_true, proba) -> float:
@@ -115,6 +120,37 @@ def tune_mlp(
     }
 
 
+def tune_hist_gradient_boosting(
+    X_tr: pd.DataFrame,
+    y_tr: pd.Series,
+    X_va: pd.DataFrame,
+    y_va: pd.Series,
+    *,
+    n_trials: int = 20,
+) -> dict[str, Any]:
+    import optuna
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+    def objective(trial: optuna.Trial) -> float:
+        params = {
+            "max_depth": trial.suggest_int("max_depth", 3, 8),
+            "max_iter": trial.suggest_int("max_iter", 80, 220, step=20),
+            "learning_rate": trial.suggest_float("learning_rate", 0.02, 0.15, log=True),
+            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 8, 40),
+            "l2_regularization": trial.suggest_float(
+                "l2_regularization", 0.1, 5.0, log=True
+            ),
+        }
+        model = train_hist_gradient_boosting(X_tr, y_tr, params=params)
+        proba = model.predict_proba(X_va)[:, 1]
+        return _pr_auc(y_va, proba)
+
+    study = optuna.create_study(direction="maximize", study_name="hist_gb")
+    study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+    return study.best_params
+
+
 def apply_optuna(
     key: str,
     X_tr: pd.DataFrame,
@@ -126,6 +162,8 @@ def apply_optuna(
 ) -> dict[str, Any] | None:
     if key == "random_forest":
         return tune_random_forest(X_tr, y_tr, X_va, y_va, n_trials=n_trials)
+    if key == "hist_gradient_boosting":
+        return tune_hist_gradient_boosting(X_tr, y_tr, X_va, y_va, n_trials=n_trials)
     if key == "lightgbm":
         return tune_lightgbm(X_tr, y_tr, X_va, y_va, n_trials=n_trials)
     if key == "mlp":

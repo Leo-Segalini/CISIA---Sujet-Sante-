@@ -9,7 +9,8 @@ if str(ROOT) not in sys.path:
 
 import pandas as pd
 
-from src.data.paths import CSV_FILES, IDENTITY_COLUMNS, ProjectPaths, get_project_root
+from src.data.paths import IDENTITY_COLUMNS, ProjectPaths, get_project_root
+from src.data.registry import CSV_FILES
 from src.data.registre import REGISTRE_COLUMNS
 
 GRAIN_BY_FILE = {

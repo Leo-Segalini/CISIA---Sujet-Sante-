@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark multi-modèles (reference, logistic, RF, LightGBM, MLP)."""
+"""Benchmark multi-modèles (reference, logistic, RF, HistGB, LightGBM, MLP)."""
 
 from __future__ import annotations
 

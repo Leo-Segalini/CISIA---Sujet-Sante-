@@ -55,10 +55,17 @@ def _local_shap_pipeline(pipe: Pipeline, X_row: pd.DataFrame) -> list[dict[str, 
     explainer = shap.TreeExplainer(clf)
     values = explainer.shap_values(Xt)
     if isinstance(values, list):
-        values = values[1]
-    row_vals = np.asarray(values)[0]
+        # Ancienne API : [classe_0, classe_1]
+        arr = np.asarray(values[1])
+    else:
+        arr = np.asarray(values)
+        # Nouvelle API RF : (n_samples, n_features, n_classes)
+        if arr.ndim == 3:
+            arr = arr[:, :, 1]
+    row_vals = np.asarray(arr)[0].reshape(-1)
     out = []
     for name, shap_val in zip(feature_names, row_vals, strict=True):
+        sv = float(np.asarray(shap_val).reshape(-1)[0])
         base = str(name).split("__", 1)[-1]
         match_col = next((c for c in X_row.columns if c in base), base)
         raw = X_row[match_col].iloc[0] if match_col in X_row.columns else None
@@ -67,8 +74,8 @@ def _local_shap_pipeline(pipe: Pipeline, X_row: pd.DataFrame) -> list[dict[str, 
                 "feature": str(match_col),
                 "libelle": libelle_feature(str(match_col)),
                 "valeur": _feature_value_display(str(match_col), raw),
-                "shap": float(shap_val),
-                "impact": "hausse" if shap_val > 0 else "baisse",
+                "shap": sv,
+                "impact": "hausse" if sv > 0 else "baisse",
             }
         )
     out.sort(key=lambda x: abs(x["shap"]), reverse=True)

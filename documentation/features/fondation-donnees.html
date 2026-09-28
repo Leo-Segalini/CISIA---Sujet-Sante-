@@ -15,9 +15,11 @@
     </nav>
     <main>
       <h1>Fondation données</h1>
-      <p>Version 0.1 — 2026-08-24</p>
+      <p>Version 0.2 — 2026-09-28</p>
       <h2>Objectif</h2>
       <p>Auditer les 11 CSV, séparer le nominatif, construire deux jeux de features (score sortie / score télésurveillance) sans fuite temporelle.</p>
+      <h2>Registre extensible</h2>
+      <p>Sources et étapes déclarées dans <code>src/data/registry.py</code> / <code>pipeline_steps.py</code>. Jupyter lit <code>describe_pipeline()</code> et <code>sources_dataframe()</code> — un nouveau bloc enregistré via <code>register_pipeline_step</code> apparaît sans réécrire les notebooks.</p>
       <h2>Arborescence</h2>
       <ul>
         <li><code>data/raw</code> — copies locales (hors git)</li>
@@ -34,13 +36,22 @@
       <h2>Lancer</h2>
       <pre><code>./scripts/lance_environnement.sh
 # Jupyter : http://127.0.0.1:8888/tree
-# Point d’entrée jury DS : notebooks/01_donnees/01_inventaire_sources.ipynb
-# (CSV → DataFrames → vérification colonnes → analyses — Run All)
+# Point d’entrée : notebooks/00_guide/01_cadre_projet.ipynb (objectifs / cadre)
+# Puis inventaire : notebooks/01_donnees/01_inventaire_sources.ipynb
+# Analyse qualité : notebooks/01_donnees/05_analyse_donnees.ipynb
+# (CSV → DataFrames → nulls/dates/patho — Run All)
 
 PYTHONPATH=. python scripts/run_pipeline.py
 PYTHONPATH=. pytest -v</code></pre>
       <h2>Changelog</h2>
       <ul>
+        <li>2026-09-28 — Page <code>/cisia/modeles</code> + notebook entraînement : RF vs HistGB (avantages/inconvénients), protocole 70/15/15, unités canoniques.</li>
+        <li>2026-09-28 — Gradient boosting (<code>hist_gradient_boosting</code>) ajouté au benchmark Optuna ; graphiques qualité (exclus / hallucinations / incohérences) sur <code>/cisia/analyse</code> ; poids saisissable IDE.</li>
+        <li>2026-09-28 — Notebooks cadre projet + analyse qualité complète (<code>01_cadre_projet</code>, <code>05_analyse_donnees</code>) alignés sur <code>/cisia/analyse</code>.</li>
+        <li>2026-09-28 — Pipeline déclaratif : registry sources + étapes (<code>register_pipeline_step</code>), Jupyter auto-adaptatif.</li>
+        <li>2026-09-28 — Mode prod hôpital : RF sortie + logistic télé, calibration sigmoid, registry, monitoring (<code>scripts/promote_production.py</code>).</li>
+        <li>2026-09-28 — Comparaison protocoles : hold-out vs CV patient vs CV stratifiée (<code>scripts/run_training_protocols.py</code>).</li>
+        <li>2026-09-28 — Features ajoutées : pathologies chroniques (flags + compte), classes ATC, complexité posologie — pour entraînement et analyse de retour.</li>
         <li>2026-09-23 — Parcours ML jury : 5 notebooks (<code>02_nettoyage</code> → <code>06_reponse</code>), Optuna × 2 scores, Jupyter <code>/tree</code> port 8888.</li>
         <li>2026-09-23 — Jupyter fixé sur le port 8888 (<code>/tree</code>) ; notebook inventaire exécutable bout en bout pour le jury data scientist.</li>
       </ul>

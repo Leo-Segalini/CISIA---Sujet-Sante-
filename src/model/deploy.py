@@ -7,6 +7,7 @@ import pandas as pd
 
 from src.data.paths import ProjectPaths
 from src.model.benchmark import model_catalog, run_benchmark
+from src.model.calibration import calibrate_prefit
 from src.model.prepare import by_split, split_xy
 from src.model.trainers import (
     train_hgb_sklearn,
@@ -36,6 +37,7 @@ def train_score(
 
     X, y, split = split_xy(features)
     X_tr, y_tr = by_split(X, y, split, "train")
+    X_va, y_va = by_split(X, y, split, "val")
 
     bundle: dict = {}
     catalog = {s.key: s for s in model_catalog()}
@@ -65,6 +67,14 @@ def train_score(
     retenu = report["retenu"]
     bundle["retenu"] = retenu
 
+    # Calibration hôpital du modèle retenu (proba sur validation)
+    if retenu in bundle and hasattr(bundle[retenu], "predict_proba"):
+        try:
+            bundle["calibrated"] = calibrate_prefit(bundle[retenu], X_va, y_va)
+            bundle["calibrated_method"] = "sigmoid_prefit_val"
+        except ValueError:
+            pass
+
     paths.ensure_data_dirs()
     joblib.dump(bundle, paths.models / f"{score_name}_bundle.joblib")
 
@@ -76,6 +86,7 @@ def train_score(
         "retenu": retenu,
         "ranking_test_pr_auc": report["ranking_test_pr_auc"],
         "optuna": report.get("optuna", False),
+        "calibrated": "calibrated" in bundle,
         "justification_algo": report.get("note", ""),
     }
     for key, data in report["modeles"].items():

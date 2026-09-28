@@ -214,6 +214,21 @@
           <span class="sejour-fiche-muted">Antécédents</span>
           <p>{{ d.Antecedents }}</p>
         </div>
+        {% if d.medicaments %}
+        <div class="sejour-fiche-meds">
+          <span class="sejour-fiche-muted">Médicaments du séjour</span>
+          <ul class="sejour-fiche-meds-list">
+            {% for m in d.medicaments %}
+            <li>
+              <strong>{{ m.Libelle }}</strong>
+              <span class="mono-value">({{ m.CodeATC }})</span>
+              — {{ m.Posologie }} · {{ m.Voie }}
+              <span class="muted">{{ m.DateDebut }} → {{ m.DateFin }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
       </div>
     </section>
 

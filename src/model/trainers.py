@@ -1,4 +1,4 @@
-"""Entraîneurs des 5 modèles du benchmark CISIA."""
+"""Entraîneurs des modèles du benchmark CISIA."""
 
 from __future__ import annotations
 
@@ -7,14 +7,26 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src.model.preprocess import build_preprocessor
 from src.model.reference import PrevalenceReference
-from src.model.train import CategoryToCode, train_hgb, train_logistic
+from src.model.train import CategoryToCode, predict_hgb, train_hgb, train_logistic
+
+
+class HistGradientBoostingArtifact:
+    """Wrapper predict_proba pour le HGB (coder + classifieur)."""
+
+    def __init__(self, coder: CategoryToCode, clf: Any):
+        self.coder = coder
+        self.clf = clf
+
+    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
+        proba_pos = predict_hgb(self.coder, self.clf, X)
+        # Compatibilité sklearn : matrice (n, 2)
+        return np.column_stack([1.0 - proba_pos, proba_pos])
 
 
 def train_reference(X_train: pd.DataFrame, y_train: pd.Series) -> PrevalenceReference:
@@ -22,6 +34,22 @@ def train_reference(X_train: pd.DataFrame, y_train: pd.Series) -> PrevalenceRefe
 
 
 def predict_reference(model: PrevalenceReference, X: pd.DataFrame) -> np.ndarray:
+    return model.predict_proba(X)[:, 1]
+
+
+def train_hist_gradient_boosting(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    *,
+    params: dict[str, Any] | None = None,
+) -> HistGradientBoostingArtifact:
+    coder, clf = train_hgb(X_train, y_train, params=params)
+    return HistGradientBoostingArtifact(coder, clf)
+
+
+def predict_hist_gradient_boosting(
+    model: HistGradientBoostingArtifact, X: pd.DataFrame
+) -> np.ndarray:
     return model.predict_proba(X)[:, 1]
 
 

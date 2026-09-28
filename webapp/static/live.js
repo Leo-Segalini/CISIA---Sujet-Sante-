@@ -569,8 +569,18 @@ function wireLitActions() {
 }
 
 async function tick() {
+  if (tickInFlight) return;
+  tickInFlight = true;
   try {
-    const res = await fetch("/api/live", { cache: "no-store" });
+    const res = await fetch("/api/live", {
+      cache: "no-store",
+      credentials: "same-origin",
+    });
+    if (res.status === 401) {
+      const fil = document.getElementById("fil-principal");
+      if (fil) fil.textContent = "Session expirée — reconnectez-vous.";
+      return;
+    }
     if (!res.ok) throw new Error("live");
     render(await res.json());
   } catch (e) {
@@ -578,9 +588,12 @@ async function tick() {
     if (fil)
       fil.textContent =
         "Les constantes ne répondent pas. Vérifiez que l’application tourne en local.";
+  } finally {
+    tickInFlight = false;
   }
 }
 
+let tickInFlight = false;
 loadLues();
 wireToastOnce();
 tick();

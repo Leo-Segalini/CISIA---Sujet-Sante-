@@ -25,6 +25,7 @@ from src.web.auth import (
     start_demo_tutorial,
     verify_credentials,
 )
+from src.data.analyse_donnees import build_analyse_complete
 from src.data.paths import ProjectPaths, get_project_root
 from src.web.export_pdf import build_fiche_pdf
 from src.web.ml_api import router as ml_router
@@ -333,6 +334,28 @@ def cisia_registre(
     )
 
 
+@app.get("/cisia/analyse", response_class=HTMLResponse)
+def cisia_analyse(request: Request):
+    paths = ProjectPaths(root=get_project_root())
+    analyse = build_analyse_complete(paths)
+    return TEMPLATES.TemplateResponse(
+        request,
+        "analyse_donnees.html",
+        _cisia_ctx(request, a=analyse),
+    )
+
+
+@app.get("/cisia/modeles", response_class=HTMLResponse)
+def cisia_modeles(request: Request):
+    from src.model.choix_algorithmes import contenu_choix_modeles
+
+    return TEMPLATES.TemplateResponse(
+        request,
+        "choix_modeles.html",
+        _cisia_ctx(request, c=contenu_choix_modeles()),
+    )
+
+
 @app.get("/cisia/biais", response_class=HTMLResponse)
 def cisia_biais(request: Request, score: str = "sortie"):
     report = biais_report(score=score)
@@ -548,6 +571,30 @@ def api_admettre_lit(payload: dict):
         )
     except KeyError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/sejours/{sejour_id}/constantes/saisie")
+def api_saisie_constantes(sejour_id: str, payload: dict):
+    """Saisie infirmière manuelle (services hors monitoring continu)."""
+    from src.web.services import saisir_constantes_sejour
+
+    try:
+        return saisir_constantes_sejour(sejour_id, payload or {})
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/sejours/{sejour_id}/moniteur")
+def api_sejour_moniteur(sejour_id: str):
+    """Constantes + séries pour graphiques live (polling fiche patient)."""
+    from src.web.services import moniteur_sejour
+
+    try:
+        return moniteur_sejour(sejour_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @app.get("/api/sejours/{sejour_id}/constantes")

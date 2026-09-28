@@ -74,20 +74,29 @@ def train_logistic(X_train: pd.DataFrame, y_train: pd.Series) -> Pipeline:
 
 
 def train_hgb(
-    X_train: pd.DataFrame, y_train: pd.Series
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    *,
+    params: dict | None = None,
 ) -> tuple[CategoryToCode, HistGradientBoostingClassifier]:
+    """Gradient boosting sklearn (HistGradientBoosting) — toujours disponible."""
+    p = {
+        "max_depth": 4,
+        "max_iter": 120,
+        "learning_rate": 0.05,
+        "min_samples_leaf": 20,
+        "l2_regularization": 1.0,
+        "class_weight": "balanced",
+        "random_state": 42,
+    }
+    if params:
+        p.update(params)
     coder = CategoryToCode(_cat_cols(X_train))
     Xt = coder.fit_transform(X_train)
     cat_idx = [Xt.columns.get_loc(c) for c in coder.columns]
     clf = HistGradientBoostingClassifier(
-        max_depth=4,
-        max_iter=120,
-        learning_rate=0.05,
-        min_samples_leaf=20,
-        l2_regularization=1.0,
-        class_weight="balanced",
         categorical_features=cat_idx if cat_idx else None,
-        random_state=42,
+        **p,
     )
     clf.fit(Xt, y_train)
     return coder, clf

@@ -15,7 +15,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd
 
 from src.data.load import load_csv
-from src.data.paths import CSV_FILES, ProjectPaths
+from src.data.paths import ProjectPaths
+from src.data.registry import CSV_FILES
 from src.data.quality import (
     harmonize_biologie,
     recalculate_duree_sejour,
@@ -116,6 +117,19 @@ def missing_rates(df: pd.DataFrame) -> dict[str, float]:
             empty = s.isna()
         out[col] = float(empty.sum()) / n
     return dict(sorted(out.items(), key=lambda kv: kv[1], reverse=True))
+
+
+def dates_hors_sejour(
+    events: pd.DataFrame,
+    sejours: pd.DataFrame,
+    *,
+    date_col: str,
+    sejour_col: str = "SejourID",
+) -> pd.Series:
+    """True si la date d'événement est hors [admission, sortie] ou invalide."""
+    return _dates_hors_sejour(
+        events, sejours, date_col=date_col, sejour_col=sejour_col
+    )
 
 
 def _dates_hors_sejour(

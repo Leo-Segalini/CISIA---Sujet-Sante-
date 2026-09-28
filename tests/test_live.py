@@ -3,11 +3,15 @@ from src.web.live import (
     EPOCH_TICKS,
     BEDSIDE_RANGES,
     alertes_machines,
+    appliquer_vitals_urgence_pedagogique,
     chambre_pour,
     localisation_pour,
+    series_evolution_from_historique,
     snapshot_constantes,
+    service_est_monitoring_continu,
+    statut_constantes_alerte,
 )
-from src.web.services import live_board, predict_sejour
+from src.web.services import live_board, predict_sejour, saisir_constantes_sejour
 
 
 def test_chambre_stable():
@@ -20,9 +24,115 @@ def test_chambre_stable():
     assert a == loc["chambre"]
 
 
+def test_monitoring_continu_par_service():
+    assert service_est_monitoring_continu("SoinsContinus") is True
+    assert service_est_monitoring_continu("Chirurgie") is False
+    assert service_est_monitoring_continu("MedecineInterne") is False
+    assert service_est_monitoring_continu("Cardiologie") is False
+
+
+def test_saisie_manuelle_refuse_soins_continus():
+    board = live_board(max_par_service=8)
+    sej_continu = None
+    sej_manuel = None
+    for rooms in board["etages"].values():
+        for r in rooms:
+            if r.get("vide") or not r.get("SejourID"):
+                continue
+            if r.get("monitoring_continu") and sej_continu is None:
+                sej_continu = r["SejourID"]
+            if (not r.get("monitoring_continu")) and sej_manuel is None:
+                sej_manuel = r["SejourID"]
+    if sej_continu:
+        try:
+            saisir_constantes_sejour(
+                sej_continu,
+                {"FrequenceCardiaque": 80, "SpO2": 97},
+            )
+            assert False, "attendu ValueError"
+        except ValueError:
+            pass
+    if sej_manuel:
+        out = saisir_constantes_sejour(
+            sej_manuel,
+            {
+                "FrequenceCardiaque": 76,
+                "SpO2": 96,
+                "Temperature": 36.9,
+                "PoidsKg": 71.5,
+                "Horodatage": "2026-09-28 10:00",
+            },
+        )
+        assert out["monitoring_continu"] is False
+        assert out["constantes"]["SpO2"] == 96
+        assert out["constantes"]["PoidsKg"] == 71.5
+        d = predict_sejour(sej_manuel)
+        assert d["monitoring_continu"] is False
+        assert d["constantes"]["SpO2"] == 96
+        assert d["PoidsKg"] == 71.5
+
+
 def test_alerte_spo2_basse():
     alerts = alertes_machines({"SpO2": 88.0, "FrequenceCardiaque": 80.0})
     assert any(x["code"] == "SpO2" for x in alerts)
+
+
+def test_vitals_urgence_pedagogique_alignee_toast():
+    """Fiche patient : mêmes SpO2/FR que le toast ALERT du plan d’étage."""
+    base = {
+        "FrequenceCardiaque": 78.0,
+        "SpO2": 97.0,
+        "FrequenceRespiratoire": 16.0,
+        "Temperature": 36.8,
+        "TensionSystolique": 128.0,
+        "TensionDiastolique": 78.0,
+    }
+    forced = appliquer_vitals_urgence_pedagogique(base)
+    assert forced["SpO2"] == 89
+    assert forced["FrequenceRespiratoire"] >= 22
+    flags = statut_constantes_alerte(forced)
+    assert flags["SpO2"] is True
+    assert any(a["code"] == "SpO2" for a in alertes_machines(forced))
+
+
+def test_series_evolution_sparkline():
+    hist = {
+        "mesures_retenues": [
+            {"Horodatage": f"2024-01-01T10:{i:02d}:00", "SpO2": 98.0 - i * 0.5, "FrequenceCardiaque": 70 + i}
+            for i in range(5)
+        ]
+    }
+    charts = series_evolution_from_historique(hist)
+    spo2 = next(c for c in charts if c["key"] == "SpO2")
+    assert spo2["n"] == 5
+    assert len(spo2["values"]) == 5
+    assert len(spo2["labels"]) == 5
+    assert spo2["seuil"] == 92
+
+
+def test_series_evolution_live_visible():
+    from src.web.live import series_evolution_live
+
+    profil = {
+        "sejour_id": "SEJ-TEST",
+        "baseline": {
+            "FrequenceCardiaque": 80.0,
+            "TensionSystolique": 130.0,
+            "TensionDiastolique": 80.0,
+            "Temperature": 36.8,
+            "FrequenceRespiratoire": 16.0,
+            "SpO2": 97.0,
+        },
+        "fragilite": False,
+        "phase0": 0.5,
+    }
+    charts = series_evolution_live(profil, tick=200, vitals_override={"SpO2": 89})
+    assert len(charts) >= 4
+    spo2 = next(c for c in charts if c["key"] == "SpO2")
+    assert spo2["n"] >= 10
+    assert spo2["dernier"] == 89
+    assert spo2["labels"][-1] == "maintenant"
+    assert len(spo2["values"]) == len(spo2["labels"])
 
 
 def test_vitals_lents_et_coherents():

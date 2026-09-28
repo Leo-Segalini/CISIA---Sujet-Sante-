@@ -8,6 +8,8 @@ from fastapi import APIRouter, Header, HTTPException
 
 from src.data.paths import ProjectPaths, get_project_root
 from src.mlops.fhir_client import FhirConfig
+from src.mlops.monitoring import build_monitoring_snapshot
+from src.mlops.production import load_production_manifest
 from src.mlops.registry import list_versions
 from src.mlops.retrain import get_retrain_state, ingest_fhir_and_append, run_full_retrain
 from src.web.services import reload_store
@@ -28,6 +30,8 @@ def ml_status():
     paths = ProjectPaths(root=get_project_root())
     return {
         "retrain": get_retrain_state(),
+        "production": load_production_manifest(paths),
+        "monitoring": build_monitoring_snapshot(paths),
         "registry": {
             "score_sortie": list_versions(paths, "score_sortie")[-3:],
             "score_tele": list_versions(paths, "score_tele")[-3:],

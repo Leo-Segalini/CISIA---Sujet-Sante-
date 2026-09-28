@@ -102,7 +102,8 @@ def _row_to_record(row: pd.Series) -> dict[str, Any]:
 
 def historique_constantes_sejour(signes: pd.DataFrame, sejour_id: str) -> dict[str, Any]:
     """Historique complet trié + synthèse du filtrage qualité."""
-    enriched = enrich_signes_vitaux(signes)
+    # signes_view est déjà enrichi au chargement — ne pas rejouer le QC à chaque lit
+    enriched = signes if "exclue" in signes.columns else enrich_signes_vitaux(signes)
     sub = enriched.loc[enriched["SejourID"].astype(str) == str(sejour_id)].copy()
     sub = sub.sort_values("Horodatage", ascending=False, na_position="last")
     mesures = [_row_to_record(row) for _, row in sub.iterrows()]
@@ -118,3 +119,30 @@ def historique_constantes_sejour(signes: pd.DataFrame, sejour_id: str) -> dict[s
         "mesures_retenues": retenues,
         "mesures_exclues": exclues,
     }
+
+
+def index_dernieres_mesures(signes: pd.DataFrame) -> dict[str, dict[str, Any]]:
+    """Dernière mesure retenue par séjour — lookup O(1) pour le plan d’étages."""
+    enriched = signes if "exclue" in signes.columns else enrich_signes_vitaux(signes)
+    if enriched.empty or "SejourID" not in enriched.columns:
+        return {}
+    ok = enriched.loc[~enriched["exclue"]].copy()
+    if ok.empty:
+        return {}
+    ok["Horodatage"] = pd.to_datetime(ok["Horodatage"], errors="coerce")
+    ok = ok.dropna(subset=["SejourID", "Horodatage"]).sort_values("Horodatage")
+    out: dict[str, dict[str, Any]] = {}
+    for sej, grp in ok.groupby(ok["SejourID"].astype(str), sort=False):
+        last = grp.iloc[-1]
+        snap: dict[str, Any] = {}
+        for col in VITAL_MEASURE_COLS:
+            v = last.get(col)
+            if v is not None and not (isinstance(v, float) and pd.isna(v)):
+                try:
+                    snap[col] = float(v)
+                except (TypeError, ValueError):
+                    continue
+        if snap:
+            out[str(sej)] = snap
+    return out
+

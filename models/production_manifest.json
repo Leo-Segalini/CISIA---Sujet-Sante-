@@ -1,0 +1,29 @@
+{
+  "environment": "hopital_production",
+  "protocol": "holdout_patient_calibrated",
+  "created_at": "20260928T071228Z",
+  "models": {
+    "score_sortie": "random_forest",
+    "score_tele": "logistic"
+  },
+  "scores": {
+    "score_sortie": {
+      "retenu": "random_forest",
+      "version_id": "score_sortie_20260928T071228Z",
+      "test_pr_auc": 0.6073605969240896,
+      "test_f2": 0.7142857142857143,
+      "threshold": 0.2,
+      "calibrated": true
+    },
+    "score_tele": {
+      "retenu": "logistic",
+      "version_id": "score_tele_20260928T071228Z",
+      "test_pr_auc": 0.5894755321540345,
+      "test_f2": 0.6521739130434783,
+      "threshold": 0.15,
+      "calibrated": true
+    }
+  },
+  "surveillance": "src.mlops.monitoring + /api/ml/status + model_watch",
+  "disclaimer": "Aide à la décision uniquement — ne remplace pas l'avis clinique. Données synthétiques CISIA."
+}

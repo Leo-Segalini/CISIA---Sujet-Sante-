@@ -15,7 +15,12 @@ from src.data.load import load_csv
 from src.data.paths import ProjectPaths, get_project_root
 from src.data.registre import load_registre
 from src.data.territoire import load_territoire_enrichi, write_complements
-from src.data.vitals import enrich_signes_vitaux, historique_constantes_sejour, signes_valides
+from src.data.vitals import (
+    enrich_signes_vitaux,
+    historique_constantes_sejour,
+    index_dernieres_mesures,
+    signes_valides,
+)
 from src.model.prepare import ID_COLS, SPLIT_COL, TARGET_COL, split_xy
 from src.model.explain_patient import build_explication_risque_30j, facteurs_risque_patient
 from src.model.inference import score_single
@@ -39,24 +44,34 @@ from src.web.live import (
     EQUIPE_PAR_SERVICE,
     equipe_complete,
     libelle_personne,
+    EPOCH_TICKS,
     FLOOR_PLAN,
     MAX_LITS_PAR_SERVICE,
     MAX_URGENT_PAR_SERVICE,
     MEDECIN_PAR_ETAGE,
+    MONITEUR_REFRESH_SEC,
     SERVICE_DATA_SOURCE,
     SERVICE_LABELS,
+    TICK_SECONDS,
     UNITE_PAR_SERVICE,
     alertes_machines,
     appliquer_urgence_pedagogique,
+    appliquer_vitals_urgence_pedagogique,
     current_tick,
     fenetre_urgence_pedagogique,
     index_constantes,
+    libelle_mode_monitoring,
     localisation_pour,
     message_soignant,
     score_news_simplifie,
+    sejour_est_urgence_pedagogique,
     sejours_pour_service,
+    series_evolution_from_historique,
+    series_evolution_live,
+    service_est_monitoring_continu,
     slots_lits_service,
     snapshot_constantes,
+    statut_constantes_alerte,
     tendance_constantes,
 )
 
@@ -71,6 +86,7 @@ class DemoStore:
     registre: pd.DataFrame
     shap: pd.DataFrame
     vitals_by_sej: dict
+    dernieres_vitals_by_sej: dict
     signes_view: pd.DataFrame
     patients_view: pd.DataFrame
     sejours_view: pd.DataFrame
@@ -84,6 +100,8 @@ class DemoStore:
     lits_nettoyes: set = field(default_factory=set)
     admissions_demo: dict = field(default_factory=dict)
     deces_assignes: dict = field(default_factory=dict)  # clé lit → SejourID décès
+    # Saisies infirmières manuelles : SejourID → liste chronologique de mesures
+    constantes_manueles: dict = field(default_factory=dict)
     _deces_init: bool = False
 
     def try_start_llm(self) -> None:
@@ -206,6 +224,7 @@ def _load_store() -> DemoStore:
         registre=registre,
         shap=shap,
         vitals_by_sej=index_constantes(signes_valides(signes_raw)),
+        dernieres_vitals_by_sej=index_dernieres_mesures(signes_view),
         signes_view=signes_view,
         patients_view=_patients_affichage(patients, vault),
         sejours_view=sejours.copy(),
@@ -421,6 +440,40 @@ def list_sejours(
     }
 
 
+def _medicaments_sejour(store: DemoStore, sejour_id: str) -> list[dict[str, Any]]:
+    """Prescriptions du séjour (libellé, ATC, posologie, voie, dates)."""
+    if not hasattr(store, "_meds_df") or store._meds_df is None:
+        try:
+            store._meds_df = load_csv(store.paths, "medications.csv", from_raw=False)
+        except Exception:  # noqa: BLE001
+            store._meds_df = pd.DataFrame()
+    meds = store._meds_df
+    if meds is None or meds.empty or "SejourID" not in meds.columns:
+        return []
+    sub = meds.loc[meds["SejourID"].astype(str) == str(sejour_id)].copy()
+    if sub.empty:
+        return []
+    if "DateDebut" in sub.columns:
+        sub = sub.sort_values("DateDebut", na_position="last")
+    out: list[dict[str, Any]] = []
+    for _, row in sub.iterrows():
+        out.append(
+            {
+                "CodeATC": str(row.get("CodeATC") or "—"),
+                "Libelle": str(row.get("LibelleMedicament") or "—"),
+                "Posologie": str(row.get("Posologie") or "—"),
+                "Voie": str(row.get("Voie") or "—"),
+                "DateDebut": str(row.get("DateDebut") or "—")[:10],
+                "DateFin": (
+                    str(row.get("DateFin") or "—")[:10]
+                    if pd.notna(row.get("DateFin")) and str(row.get("DateFin")).strip()
+                    else "en cours"
+                ),
+            }
+        )
+    return out
+
+
 def _poids_patient(store: DemoStore, patient_id: str) -> float | None:
     """Dernier poids objets connectés (signal Bon), s’il existe."""
     if not hasattr(store, "_objets_df") or store._objets_df is None:
@@ -445,6 +498,196 @@ def _poids_patient(store: DemoStore, patient_id: str) -> float | None:
         return round(float(sub.iloc[-1]["Valeur"]), 1)
     except (TypeError, ValueError):
         return None
+
+
+_VITAL_KEYS_SAISIE = (
+    "FrequenceCardiaque",
+    "SpO2",
+    "TensionSystolique",
+    "TensionDiastolique",
+    "Temperature",
+    "FrequenceRespiratoire",
+    "PoidsKg",
+)
+
+
+def _constantes_depuis_historique(
+    store: DemoStore, sejour_id: str
+) -> dict[str, Any]:
+    """Dernière mesure retenue du dossier (CSV), ou vide."""
+    hist = historique_constantes_sejour(store.signes_view, sejour_id)
+    retenues = hist.get("mesures_retenues") or []
+    if not retenues:
+        return {}
+    # mesures_retenues : plus récent en premier
+    last = retenues[0]
+    out: dict[str, Any] = {}
+    for k in _VITAL_KEYS_SAISIE:
+        v = last.get(k)
+        if v is not None and not (isinstance(v, float) and pd.isna(v)):
+            out[k] = float(v)
+    return out
+
+
+def _historique_enrichi_saisies(
+    store: DemoStore, sejour_id: str
+) -> dict[str, Any]:
+    """Historique dossier + saisies infirmières (pour graphiques / tableau)."""
+    hist = historique_constantes_sejour(store.signes_view, sejour_id)
+    saisies = list(store.constantes_manueles.get(str(sejour_id), []))
+    if not saisies:
+        return hist
+    extras = []
+    for i, s in enumerate(saisies):
+        extras.append(
+            {
+                "ConstanteID": s.get("ConstanteID") or f"SAISIE-{i + 1}",
+                "Horodatage": s.get("Horodatage"),
+                "FrequenceCardiaque": s.get("FrequenceCardiaque"),
+                "TensionSystolique": s.get("TensionSystolique"),
+                "TensionDiastolique": s.get("TensionDiastolique"),
+                "Temperature": s.get("Temperature"),
+                "FrequenceRespiratoire": s.get("FrequenceRespiratoire"),
+                "SpO2": s.get("SpO2"),
+                "PoidsKg": s.get("PoidsKg"),
+                "exclue": False,
+                "motif_exclusion": None,
+                "source": "saisie_infirmiere",
+            }
+        )
+    # Fusion : plus récent d’abord
+    mesures = extras[::-1] + list(hist.get("mesures") or [])
+    retenues = [m for m in mesures if not m.get("exclue")]
+    exclues = [m for m in mesures if m.get("exclue")]
+    return {
+        **hist,
+        "total": len(mesures),
+        "retenues": len(retenues),
+        "exclues": len(exclues),
+        "mesures": mesures,
+        "mesures_retenues": retenues,
+        "mesures_exclues": exclues,
+    }
+
+
+def _vitals_manuel_courants(store: DemoStore, sejour_id: str) -> dict[str, Any]:
+    """Dernière saisie infirmière, sinon dernière mesure dossier (index O(1))."""
+    saisies = store.constantes_manueles.get(str(sejour_id)) or []
+    if saisies:
+        last = saisies[-1]
+        return {k: last.get(k) for k in _VITAL_KEYS_SAISIE if last.get(k) is not None}
+    cached = store.dernieres_vitals_by_sej.get(str(sejour_id))
+    if cached:
+        return dict(cached)
+    return _constantes_depuis_historique(store, sejour_id)
+
+
+def _vitals_live_pour_sejour(store: DemoStore, sejour_id: str, service: str) -> dict[str, Any]:
+    """Constantes selon le mode du service (live machines vs saisie manuelle)."""
+    loc = localisation_pour(sejour_id, service)
+    continu = service_est_monitoring_continu(service)
+    tick = current_tick()
+    profil = store.vitals_by_sej.get(sejour_id)
+
+    if continu:
+        vitals = snapshot_constantes(profil, tick=tick)
+        etage_lib = str(loc["etage_libelle"])
+        candidats_ids: list[str] = []
+        floor = next((f for f in FLOOR_PLAN if f["etage_libelle"] == etage_lib), None)
+        if floor:
+            for svc in floor["services"]:
+                if not service_est_monitoring_continu(svc):
+                    continue
+                for room in _rooms_for_service(
+                    store, svc, tick, max_par_service=MAX_LITS_PAR_SERVICE
+                ):
+                    if (
+                        room.get("SejourID")
+                        and not room.get("vide")
+                        and room.get("niveau") not in {"disponible", "a_nettoyer"}
+                    ):
+                        candidats_ids.append(str(room["SejourID"]))
+        urgence_demo, urgence_restant_s = sejour_est_urgence_pedagogique(
+            sejour_id, candidats_ids, etage_libelle=etage_lib
+        )
+        if urgence_demo:
+            vitals = appliquer_vitals_urgence_pedagogique(vitals)
+        charts = series_evolution_live(
+            profil,
+            tick=tick,
+            vitals_override=vitals if urgence_demo else None,
+        )
+        tendance = tendance_constantes(profil, tick=tick)
+        refresh = MONITEUR_REFRESH_SEC
+    else:
+        vitals = _vitals_manuel_courants(store, sejour_id)
+        urgence_demo, urgence_restant_s = False, 0
+        hist = _historique_enrichi_saisies(store, sejour_id)
+        charts = series_evolution_from_historique(hist)
+        tendance = "stable"
+        refresh = 0
+
+    machines = alertes_machines(vitals) if vitals else []
+    return {
+        "SejourID": sejour_id,
+        "tick": tick,
+        "monitoring_continu": continu,
+        "mode_monitoring": libelle_mode_monitoring(service),
+        "service_code": service,
+        "refresh_seconds": refresh,
+        "tick_seconds": TICK_SECONDS,
+        "epoch_seconds": EPOCH_TICKS * TICK_SECONDS,
+        "constantes": vitals,
+        "constantes_alerte": statut_constantes_alerte(vitals) if vitals else {},
+        "score_news": score_news_simplifie(vitals) if vitals else None,
+        "alertes_machines": machines,
+        "urgence_pedagogique": urgence_demo,
+        "urgence_restant_s": urgence_restant_s,
+        "tendance_constantes": tendance,
+        "series": charts,
+        "n_saisies_manuel": len(store.constantes_manueles.get(str(sejour_id), [])),
+    }
+
+
+def saisir_constantes_sejour(sejour_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Enregistre une saisie infirmière (services hors monitoring continu)."""
+    store = get_store()
+    scored = _score_row(store, sejour_id)
+    service = scored["service"]
+    if service_est_monitoring_continu(service):
+        raise ValueError(
+            "Ce patient est en monitoring continu : les constantes viennent des machines."
+        )
+    mesure: dict[str, Any] = {
+        "ConstanteID": f"SAISIE-{int(time.time())}",
+        "Horodatage": str(payload.get("Horodatage") or pd.Timestamp.now().isoformat(timespec="minutes")),
+        "source": "saisie_infirmiere",
+        "note": str(payload.get("note") or "").strip()[:200] or None,
+    }
+    for key in _VITAL_KEYS_SAISIE:
+        raw = payload.get(key)
+        if raw is None or raw == "":
+            continue
+        try:
+            mesure[key] = float(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Valeur invalide pour {key}") from exc
+    if sum(1 for k in _VITAL_KEYS_SAISIE if mesure.get(k) is not None) < 2:
+        raise ValueError("Indiquez au moins deux constantes.")
+    bucket = store.constantes_manueles.setdefault(str(sejour_id), [])
+    bucket.append(mesure)
+    # Index plan d’étages : dernière valeur connue immédiatement
+    store.dernieres_vitals_by_sej[str(sejour_id)] = {
+        k: mesure[k] for k in _VITAL_KEYS_SAISIE if mesure.get(k) is not None
+    }
+    return _vitals_live_pour_sejour(store, sejour_id, service)
+
+
+def moniteur_sejour(sejour_id: str) -> dict[str, Any]:
+    """Payload léger pour graphiques / cartes (polling si monitoring continu)."""
+    store = get_store()
+    scored = _score_row(store, sejour_id)
+    return _vitals_live_pour_sejour(store, sejour_id, scored["service"])
 
 
 def predict_sejour(sejour_id: str) -> dict:
@@ -512,14 +755,25 @@ def predict_sejour(sejour_id: str) -> dict:
     )
     service = scored["service"]
     loc = localisation_pour(sejour_id, service)
-    profil = store.vitals_by_sej.get(sejour_id)
-    vitals = snapshot_constantes(profil)
-    machines = alertes_machines(vitals)
+    moniteur = _vitals_live_pour_sejour(store, sejour_id, service)
+    vitals = moniteur["constantes"]
+    vitals_alert_flags = moniteur["constantes_alerte"]
+    machines = moniteur["alertes_machines"]
+    urgence_demo = moniteur["urgence_pedagogique"]
+    urgence_restant_s = moniteur["urgence_restant_s"]
+    news = moniteur["score_news"]
+    charts = moniteur["series"]
     pat = _patient_card(store, scored["patient"])
     admin = _sejour_admin(store, sejour_id)
     terr = _territoire_card(store, pat["Commune"], pat["CodePostal"])
-    news = score_news_simplifie(vitals)
-    poids = _poids_patient(store, scored["patient"])
+    poids_manuel = vitals.get("PoidsKg") if vitals else None
+    poids = (
+        round(float(poids_manuel), 1)
+        if poids_manuel is not None
+        else _poids_patient(store, scored["patient"])
+    )
+    medicaments = _medicaments_sejour(store, sejour_id)
+    hist = _historique_enrichi_saisies(store, sejour_id)
     return {
         "SejourID": sejour_id,
         "PatientID": scored["patient"],
@@ -534,6 +788,7 @@ def predict_sejour(sejour_id: str) -> dict:
         "Commune": pat["Commune"],
         "CodePostal": pat["CodePostal"],
         "PoidsKg": poids,
+        "medicaments": medicaments,
         "chambre": loc["chambre"],
         "lit": loc["lit"],
         "lit_complet": loc["lit_complet"],
@@ -543,7 +798,10 @@ def predict_sejour(sejour_id: str) -> dict:
         "uf": loc["uf"],
         "poste": loc["poste"],
         "ide_equipe": loc["ide_equipe"],
+        "service": service,
         "service_libelle": SERVICE_LABELS.get(service, service),
+        "monitoring_continu": moniteur["monitoring_continu"],
+        "mode_monitoring": moniteur["mode_monitoring"],
         "admin": admin,
         "territoire": terr,
         "score_news": news,
@@ -567,9 +825,14 @@ def predict_sejour(sejour_id: str) -> dict:
         "justification": justification,
         "justification_backend": backend,
         "constantes": vitals,
-        "constantes_historique": historique_constantes_sejour(store.signes_view, sejour_id),
-        "tendance_constantes": tendance_constantes(profil),
+        "constantes_alerte": vitals_alert_flags,
+        "constantes_historique": hist,
+        "constantes_charts": charts,
+        "tendance_constantes": moniteur["tendance_constantes"],
         "alertes_machines": machines,
+        "urgence_pedagogique": urgence_demo,
+        "urgence_restant_s": urgence_restant_s,
+        "moniteur_refresh_seconds": moniteur["refresh_seconds"],
         "consigne": message_soignant(
             chambre=loc["chambre"],
             vitals=vitals,
@@ -734,24 +997,39 @@ def _room_disponible(service: str, slot: dict) -> dict:
 def _build_occupe_room(
     store: DemoStore, sej: str, sc: dict, loc: dict, tick: int, *, service_code: str
 ) -> dict:
-    profil = store.vitals_by_sej.get(sej)
-    vitals = snapshot_constantes(profil, tick=tick)
-    machines = alertes_machines(vitals)
+    continu = service_est_monitoring_continu(service_code)
+    if continu:
+        profil = store.vitals_by_sej.get(sej)
+        vitals = snapshot_constantes(profil, tick=tick)
+        tendance = tendance_constantes(profil, tick=tick)
+    else:
+        profil = None
+        vitals = _vitals_manuel_courants(store, sej)
+        tendance = "stable"
+    machines = alertes_machines(vitals) if vitals else []
     doc_row = store.docs.loc[store.docs["SejourID"] == sej]
     document = str(doc_row["document"].iloc[0]) if len(doc_row) else ""
     suivi_sortie = bool(sc["proba"] >= SEUIL_ETAGE_SURVEILLANCE)
     msg = message_soignant(
         chambre=loc["chambre"],
-        vitals=vitals,
+        vitals=vitals or {},
         machine_alerts=machines,
         risque_sortie=suivi_sortie,
         document=document,
     )
+    if not continu and not machines:
+        msg = (
+            f"Chambre {loc['chambre']} : constantes saisies par l’équipe "
+            "(pas de moniteur branché)."
+        )
     niveau = "calme"
     if suivi_sortie:
         niveau = "a_surveiller"
-    if machines:
+    # Alertes machines (SpO2 etc.) uniquement pertinentes en monitoring continu
+    if continu and machines:
         niveau = "urgent"
+    elif (not continu) and machines:
+        niveau = "a_surveiller"
     pat = _patient_card(store, sc["patient"])
     return {
         "SejourID": sej,
@@ -768,15 +1046,16 @@ def _build_occupe_room(
         "uf": loc["uf"],
         "service": SERVICE_LABELS.get(service_code, service_code),
         "service_code": service_code,
+        "monitoring_continu": continu,
         "niveau": niveau,
         "vide": False,
         "deces": False,
         "proba": round(sc["proba"], 3),
         "constantes": vitals,
-        "tendance": tendance_constantes(profil, tick=tick),
-        "alertes": machines,
+        "tendance": tendance,
+        "alertes": machines if continu else [],
         "consigne": msg,
-        "score_news": score_news_simplifie(vitals),
+        "score_news": score_news_simplifie(vitals) if vitals else None,
         "age": None if pd.isna(sc["age"]) else round(float(sc["age"])),
     }
 

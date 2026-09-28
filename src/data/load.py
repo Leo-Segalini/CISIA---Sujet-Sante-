@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.data.paths import CSV_FILES, ProjectPaths
+from src.data.paths import ProjectPaths
+from src.data.registry import CSV_FILES
 
 
 def copy_sources_to_raw(paths: ProjectPaths) -> dict[str, Path]:

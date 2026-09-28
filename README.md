@@ -187,6 +187,8 @@ PYTHONPATH=. python scripts/run_benchmark.py --optuna --trials 25
 # Déployer bundles webapp (après benchmark intégré)
 PYTHONPATH=. python scripts/train_models.py
 PYTHONPATH=. python scripts/train_models.py --optuna
+# Production hôpital (RF sortie + logistic télé, calibrés, registry, monitoring)
+PYTHONPATH=. python scripts/promote_production.py
 
 # Pipeline complet : données + qualité + entraînement + registry
 PYTHONPATH=. python scripts/run_retrain.py
