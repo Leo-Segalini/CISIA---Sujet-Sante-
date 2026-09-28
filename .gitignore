@@ -75,9 +75,6 @@ docker-compose.override.yml
 
 # --- Présentations & livrables personnels ---
 docs/presentation/
-*.pptx
-*.pptx.bak
-*.docx
 Léo SEGALINI BRIANT*
 Leo SEGALINI BRIANT*
 
