@@ -68,8 +68,8 @@ flowchart TB
 
     subgraph ui [Parcours web]
         HUB[Hub /]
-        CISIA[/cisia — brief jury]
-        SOIG[/soignant — lits live]
+        CISIA["/cisia — brief jury"]
+        SOIG["/soignant — lits live"]
     end
 
     sources --> pipeline
