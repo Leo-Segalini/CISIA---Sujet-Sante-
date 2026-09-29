@@ -282,9 +282,11 @@ Le protocole n’utilise **pas** cent pour cent des données pour entraîner et 
 
 Le **critère de sélection** du modèle retenu est le **PR-AUC sur le jeu test**, adapté aux classes déséquilibrées — l’accuracy serait trompeuse. Le **seuil d’alerte** est choisi pour maximiser le **F2 sur la validation**, afin de privilégier le rappel.
 
-Sur ce jeu, la **forêt aléatoire** obtient le meilleur PR-AUC test, de l’ordre de **zéro virgule soixante et un**. C’est pourquoi elle est retenue pour le **score sortie** en production pédagogique. LightGBM peut afficher un F2 un peu plus élevé, mais il perd sur le critère PR-AUC officiel. Le MLP, lui, chute en test : sur un petit effectif, environ quatre cent quatre-vingts séjours, il surapprend facilement.
+Sur ce run, la **forêt aléatoire** est **première en PR-AUC test** (environ **zéro virgule cinquante-huit**), devant la logistique puis LightGBM. Elle est donc alignée avec le critère officiel **et** figée en production pédagogique.
 
-Pourquoi la forêt est pertinente **ici** : elle est robuste au bruit, interprétable via SHAP, déployable simplement avec scikit-learn, et stable sur un petit jeu. Pour une mise en production future avec un **beaucoup plus grand** volume de données, un HistGradientBoosting ou un LightGBM redeviendrait souvent plus efficace en performance et en scalabilité : nous le documentons explicitement dans l’application et les notebooks, sans l’imposer sur ce volume.
+**Pourquoi RF plutôt que LightGBM**, même quand un boosting peut gagner de peu ou afficher un meilleur F2 : LightGBM a ici un **F2 plus haut** (environ zéro virgule soixante-dix-huit) mais un **PR-AUC plus bas** (environ zéro virgule cinquante-trois). Or on **sélectionne sur le ranking PR-AUC**, pas sur un seul seuil F2. Ensuite : **SHAP** plus simple et stable, **une seule dépendance sklearn**, moins de sensibilité aux hyperparamètres Optuna sur ~480 séjours, et un écart de ranking souvent **négligeable** d’un seed à l’autre. Le graphique `documentation/assets/comparaison_modeles_rf.png` montre explicitement **RETENU prod** versus **1ᵉʳ PR-AUC** quand ils divergent. Le MLP, lui, chute en test : surapprentissage typique sur petit effectif.
+
+Pour une mise en production future avec un **beaucoup plus grand** volume, un HistGB ou LightGBM redeviendrait souvent plus efficace : on le documente dans l’app et les notebooks, sans l’imposer sur ce volume.
 
 Pour le **score télé** post-sortie, la production actuelle retient plutôt une **régression logistique**, avec un seuil calibré de l’ordre de quinze pour cent, tandis que le score sortie RF utilise un seuil calibré de l’ordre de vingt pour cent.
 
@@ -363,7 +365,11 @@ Je vous remercie pour votre attention. Je suis disponible pour vos questions. »
 
 ### « Pourquoi avoir choisi la forêt aléatoire ? »
 
-« Parce que, sur notre protocole patient-level, elle obtient le meilleur PR-AUC sur le jeu test, qui est notre critère officiel compte tenu du déséquilibre des classes. Elle reste robuste sur un petit volume, s’explique avec SHAP, et se déploie simplement. LightGBM peut être meilleur sur le F2, mais il n’est pas premier sur le PR-AUC. Sur un plus grand jeu hospitalier, nous envisageons de re-benchmarker et potentiellement de basculer vers un boosting type HistGB. »
+« Sur le protocole patient-level, le critère officiel est le **PR-AUC test**. Sur ce run, la forêt est **première** en PR-AUC ; LightGBM a un F2 plus élevé mais un PR-AUC plus bas — or on ne sélectionne pas uniquement sur le F2. Même si, sur un autre seed Optuna, LightGBM passait devant de quelques dixièmes de point, on **figerait quand même la RF** en production pédagogique : écart négligeable, SHAP plus lisible pour le jury et les soignants, déploiement sklearn sans dépendance native LightGBM, stabilité sur ~480 séjours. Le benchmark reste transparent : le classement complet et le graphique comparent explicitement RETENU et meilleur PR-AUC. Sur un plus grand jeu hospitalier, on re-benchmarkerait et on pourrait basculer vers HistGB ou LightGBM. »
+
+### « Pourquoi pas LightGBM alors ? »
+
+« LightGBM est dans le catalogue et Optuna le tune. Ici il gagne surtout sur le **F2 au seuil choisi**, pas sur le **PR-AUC** qui mesure le ranking global. Un F2 haut peut flatter un modèle agressif sur un seul point de fonctionnement. En plus, LightGBM ajoute une dépendance native (libomp sur Mac) et des explications un peu moins « plug-and-play » que la RF pour la démo SHAP. Donc : benchmarké, documenté, pas retenu en prod sur ce volume. »
 
 ### « Avez-vous entraîné sur 100 % des données ? »
 

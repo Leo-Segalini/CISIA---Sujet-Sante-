@@ -45,8 +45,8 @@ class ProjectPaths:
 
     @property
     def csv_sources(self) -> Path:
-        """CSV pédagogiques fournis à la racine du sujet."""
-        return self.root
+        """CSV pédagogiques immuables (`donnees/`) — jamais écrits par le pipeline."""
+        return self.root / "donnees"
 
     def ensure_data_dirs(self) -> None:
         for p in (
@@ -60,10 +60,18 @@ class ProjectPaths:
             p.mkdir(parents=True, exist_ok=True)
 
 
+def _has_sources(root: Path) -> bool:
+    return (root / "donnees" / "patients.csv").is_file() or (
+        root / "patients.csv"
+    ).is_file()
+
+
 def get_project_root() -> Path:
-    """Remonte jusqu'au dossier contenant Sujet.md et patients.csv."""
+    """Remonte jusqu'au dossier contenant Sujet.md et les CSV sources (`donnees/`)."""
     here = Path(__file__).resolve()
     for candidate in [here, *here.parents]:
-        if (candidate / "Sujet.md").exists() and (candidate / "patients.csv").exists():
+        if (candidate / "Sujet.md").exists() and _has_sources(candidate):
             return candidate
-    raise FileNotFoundError("Racine projet introuvable (Sujet.md + patients.csv).")
+    raise FileNotFoundError(
+        "Racine projet introuvable (Sujet.md + donnees/patients.csv)."
+    )

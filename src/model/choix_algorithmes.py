@@ -20,11 +20,14 @@ def contenu_choix_modeles() -> dict[str, Any]:
             "pourquoi": (
                 "Avec un petit jeu patient-level, la RF offre le meilleur compromis "
                 "PR-AUC / stabilité / interprétabilité (SHAP). Elle surapprend moins qu’un "
-                "boosting agressif ou un MLP sur ce volume."
+                "boosting agressif ou un MLP sur ce volume. LightGBM reste dans le benchmark : "
+                "souvent meilleur F2 au seuil, mais on fige la RF en prod (sklearn, SHAP, "
+                "écart PR-AUC souvent négligeable d’un seed à l’autre)."
             ),
             "critere": (
                 "Classement sur PR-AUC test (classes déséquilibrées) ; seuil d’alerte "
-                "choisi pour maximiser le F2 sur validation (priorité au rappel)."
+                "choisi pour maximiser le F2 sur validation (priorité au rappel). "
+                "Le modèle prod peut différer du 1ᵉʳ PR-AUC si le contrat hôpital fige la RF."
             ),
         },
         "histgb": {

@@ -30,7 +30,7 @@ def test_missing_rates_detects_empty_strings():
 def test_analyze_signes_vitaux(registre: pd.DataFrame):
     root = get_project_root()
     paths = ProjectPaths(root=root)
-    sv = pd.read_csv(root / "signes_vitaux.csv", nrows=200)
+    sv = pd.read_csv(root / "donnees" / "signes_vitaux.csv", nrows=200)
     rep = analyze_dataset("signes_vitaux.csv", sv, registre)
     assert rep["n_lignes"] == 200
     assert "FrequenceCardiaque" in rep["aberrants"] or rep["aberrants"] == {}

@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def find_project_root() -> Path:
-    """Dossier contenant patients.csv + Sujet.md."""
+    """Dossier contenant Sujet.md + donnees/patients.csv (ou patients.csv legacy)."""
     candidates: list[Path] = []
 
     env = os.environ.get("CISIA_ROOT")
@@ -31,6 +31,11 @@ def find_project_root() -> Path:
         candidates.append(Path("/content"))
         candidates.extend(Path("/content").iterdir())
 
+    def _is_root(p: Path) -> bool:
+        if not (p / "Sujet.md").is_file():
+            return False
+        return (p / "donnees" / "patients.csv").is_file() or (p / "patients.csv").is_file()
+
     seen: set[Path] = set()
     for p in candidates:
         try:
@@ -40,11 +45,11 @@ def find_project_root() -> Path:
         if p in seen or not p.is_dir():
             continue
         seen.add(p)
-        if (p / "patients.csv").is_file() and (p / "Sujet.md").is_file():
+        if _is_root(p):
             return p
 
     raise FileNotFoundError(
-        "Racine CISIA introuvable (patients.csv + Sujet.md).\n"
+        "Racine CISIA introuvable (Sujet.md + donnees/patients.csv).\n"
         "Sur Colab : uploadez et dézippez l'archive CIF dans /content, puis :\n"
         "  import os; os.chdir('/content/CISIA_Sante')\n"
         "ou définissez : os.environ['CISIA_ROOT'] = '/content/CISIA_Sante'"

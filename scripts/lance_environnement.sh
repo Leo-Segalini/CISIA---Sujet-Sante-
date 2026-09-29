@@ -31,7 +31,13 @@ docker_cisia_up() {
   local port="$1"
   docker_cisia_reset
   docker build -t cisia-api:latest "$ROOT"
+  # Ne fait pas échouer tout le script si le healthcheck Compose est trop strict :
+  # on attend ensuite /api/health nous-mêmes.
+  set +e
   WEBAPP_PORT="$port" docker compose up -d
+  local rc=$?
+  set -e
+  return "$rc"
 }
 
 # --- Options ---
@@ -92,17 +98,28 @@ else
     if lsof -i ":$WEBAPP_PORT" -sTCP:LISTEN 2>/dev/null | grep -qv docker; then
       warn "Port $WEBAPP_PORT déjà utilisé (webapp locale ?). Arrêtez-la ou utilisez --webapp-locale."
     fi
-    docker_cisia_up "$WEBAPP_PORT"
-    ok "Conteneurs démarrés (cisia-api, cisia-retrain)"
-    log "Attente santé API…"
-    for i in $(seq 1 60); do
-      if curl -sf "http://127.0.0.1:$WEBAPP_PORT/api/health" >/dev/null 2>&1; then
-        ok "API Docker healthy"
-        break
+    if ! docker_cisia_up "$WEBAPP_PORT"; then
+      warn "Docker Compose n’est pas devenu healthy — bascule webapp locale (sans Docker)."
+      WEBAPP_LOCALE=1
+      docker_cisia_reset
+    else
+      ok "Conteneurs démarrés (cisia-api, cisia-retrain)"
+      log "Attente santé API…"
+      API_OK=0
+      for i in $(seq 1 90); do
+        if curl -sf "http://127.0.0.1:$WEBAPP_PORT/api/health" >/dev/null 2>&1; then
+          ok "API Docker healthy"
+          API_OK=1
+          break
+        fi
+        sleep 2
+      done
+      if [[ "$API_OK" != "1" ]]; then
+        warn "API Docker non joignable — bascule webapp locale. Logs : docker compose logs webapp"
+        WEBAPP_LOCALE=1
+        docker_cisia_reset
       fi
-      sleep 2
-      [[ "$i" == "60" ]] && warn "API non joignable après 120 s — vérifiez : docker compose logs webapp"
-    done
+    fi
   fi
 fi
 
@@ -174,7 +191,7 @@ else
   ok "  Soignant → /soignant"
 fi
 
-# --- Récap ---
+# --- Récap (sautable si appelé depuis install_et_lance.sh) ---
 if [[ "$WEBAPP_LOCALE" == "1" ]]; then
   WEB_URL="http://127.0.0.1:8000"
   API_URL="http://127.0.0.1:8001"
@@ -183,16 +200,41 @@ else
   API_URL="$WEB_URL"
 fi
 
+if [[ "${CISIA_SKIP_BANNER:-0}" == "1" ]]; then
+  exit 0
+fi
+
+PYTHON_VERSION="$(python -V 2>&1 || echo 'Python inconnu')"
+PYTHON_PATH="$(command -v python 2>/dev/null || echo 'n/a')"
+
 cat <<EOF
 
-════════════════════════════════════════════
+════════════════════════════════════════════════════════════════
   CISIA Santé — environnement démarré
-════════════════════════════════════════════
-  Jupyter    : http://127.0.0.1:$JUPYTER_PORT/tree
-  Point d'entrée : notebooks/01_donnees/01_inventaire_sources.ipynb
+════════════════════════════════════════════════════════════════
+
+  Python utilisé : $PYTHON_VERSION
+  Exécutable     : $PYTHON_PATH
+
+  Jupyter (arborescence) :
+    http://127.0.0.1:$JUPYTER_PORT/tree
+
+  ★ Journal de bord (méthode & choix) :
+    http://127.0.0.1:$JUPYTER_PORT/doc/tree/00_guide/02_journal_de_bord.ipynb
+
+  ★ Sommaire / parcours CIF :
+    http://127.0.0.1:$JUPYTER_PORT/doc/tree/00_guide/00_sommaire.ipynb
+
+  Cadre projet :
+    http://127.0.0.1:$JUPYTER_PORT/doc/tree/00_guide/01_cadre_projet.ipynb
+
+  Inventaire données :
+    http://127.0.0.1:$JUPYTER_PORT/doc/tree/01_donnees/01_inventaire_sources.ipynb
+
   Webapp     : $WEB_URL
   API santé  : $API_URL/api/health
   MLOps      : $API_URL/api/ml/status
+
   Arrêt      : ./scripts/arrete_environnement.sh
-════════════════════════════════════════════
+════════════════════════════════════════════════════════════════
 EOF

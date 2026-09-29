@@ -26,7 +26,10 @@ REGISTRE_COLUMNS = [
 SENSITIVE = {"identite_directe", "sante_art9", "proxy_socio"}
 
 
-def load_registre(path: Path) -> pd.DataFrame:
+def load_registre(path: Path | ProjectPaths) -> pd.DataFrame:
+    """Charge le registre colonnes. Accepte un `Path` ou un `ProjectPaths`."""
+    if isinstance(path, ProjectPaths):
+        path = path.registres / "registre_colonnes.csv"
     if not path.exists():
         raise FileNotFoundError(f"Registre introuvable: {path}")
     df = pd.read_csv(path)
@@ -46,8 +49,16 @@ def build_source_column_index(paths: ProjectPaths) -> pd.DataFrame:
 
 
 def assert_registre_covers_sources(
-    registre: pd.DataFrame, column_index: pd.DataFrame
+    registre: pd.DataFrame | ProjectPaths,
+    column_index: pd.DataFrame | None = None,
 ) -> None:
+    """Vérifie couverture registre ↔ CSV. Accepte `(reg, index)` ou `paths` seul."""
+    if isinstance(registre, ProjectPaths):
+        paths = registre
+        registre = load_registre(paths)
+        column_index = build_source_column_index(paths)
+    if column_index is None:
+        raise TypeError("column_index requis sauf si on passe un ProjectPaths")
     sujet = registre.loc[registre["fichier_source"].isin(CSV_FILES)]
     left = set(zip(sujet["fichier_source"], sujet["colonne"]))
     right = set(zip(column_index["fichier_source"], column_index["colonne"]))

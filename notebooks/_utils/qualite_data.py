@@ -30,9 +30,12 @@ def collecter_exemples_hallucinations(paths: ProjectPaths) -> dict[str, pd.DataF
             "FrequenceCardiaque",
             "TensionSystolique",
             "TensionDiastolique",
+            "Temperature",
+            "FrequenceRespiratoire",
+            "SpO2",
             "motifs_exclusion",
         ]
-        exemples["signes_vitaux_exclus"] = excl[cols].head(12)
+        exemples["signes_vitaux_exclus"] = excl[[c for c in cols if c in excl.columns]].head(12)
 
     bio = harmonize_biologie(load_csv(paths, "biologies.csv", from_raw=False))
     ab = bio.loc[bio["flag_biologie_aberrante"]]
@@ -59,7 +62,11 @@ def collecter_exemples_hallucinations(paths: ProjectPaths) -> dict[str, pd.DataF
     dates = pd.to_datetime(merged["DateActe"], errors="coerce")
     adm = pd.to_datetime(merged["DateAdmission"], errors="coerce")
     sortie = pd.to_datetime(merged["DateSortie"], errors="coerce")
-    hors = merged.loc[dates.isna() | dates.lt(adm) | dates.gt(sortie)]
+    # Comparaison au jour calendaire (DateActe est une date sans heure)
+    d_day = dates.dt.normalize()
+    a_day = adm.dt.normalize()
+    s_day = sortie.dt.normalize()
+    hors = merged.loc[dates.isna() | d_day.lt(a_day) | d_day.gt(s_day)]
     if len(hors):
         exemples["actes_date_hors_sejour"] = hors[
             ["ActeID", "SejourID", "DateActe", "DateAdmission", "DateSortie"]

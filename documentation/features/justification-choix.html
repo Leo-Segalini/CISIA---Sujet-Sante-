@@ -243,16 +243,16 @@
       <h2>4. Modèles — pourquoi retenir / écarter</h2>
       <div class="cards">
         <article class="card card-ok">
-          <span class="tag tag-ok">Retenu</span>
-          <h3>LightGBM</h3>
+          <span class="tag tag-ok">Retenu prod</span>
+          <h3>Forêt aléatoire (RF)</h3>
           <p class="why">Pourquoi ?</p>
-          <p>Meilleur <strong>PR-AUC test</strong> sur splits patient-level (classes déséquilibrées). Optuna sur validation.</p>
+          <p>Critère officiel = <strong>PR-AUC test</strong> (splits patient-level). RF figée en production pédagogique : sklearn, SHAP, stabilité sur ~480 séjours. Graphique : <code>documentation/assets/comparaison_modeles_rf.png</code> (RETENU vs 1ᵉʳ PR-AUC si divergence).</p>
         </article>
         <article class="card card-info">
-          <span class="tag tag-info">Gardé</span>
-          <h3>Logistic / RF / référence</h3>
-          <p class="why">Pourquoi ?</p>
-          <p>Baseline et alternatives interprétables. Comparaison honnête sur les <em>mêmes</em> splits.</p>
+          <span class="tag tag-info">Benchmarké</span>
+          <h3>LightGBM / HistGB / logistic</h3>
+          <p class="why">Pourquoi pas LightGBM en prod ?</p>
+          <p>Présent au benchmark Optuna. Peut gagner le <strong>F2</strong> au seuil sans gagner le <strong>PR-AUC</strong>. On sélectionne sur le ranking, pas sur un seul seuil ; RF reste plus simple à expliquer et déployer ici.</p>
         </article>
         <article class="card card-warn">
           <span class="tag tag-warn">Comparé</span>

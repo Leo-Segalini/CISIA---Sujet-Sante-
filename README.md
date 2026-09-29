@@ -2,25 +2,50 @@
 
 Données **synthétiques** uniquement : jamais une décision clinique réelle.
 
+**Python requis : 3.13** (recommandé). Éviter 3.14 — `pyarrow` n’y est pas disponible. Les scripts de lancement affichent la version utilisée en fin d’exécution.
+
+**Sources CSV :** dossier `donnees/` (**immuable**, ne pas modifier). Au lancement / pipeline, elles sont **dupliquées** vers `data/raw/` puis transformées en `data/curated/` (train/val/test).
+
 ---
 
 ## Démarrage rapide (tout-en-un)
 
 ```bash
+# Install (venv + deps) + pipeline si besoin + Jupyter + webapp
+chmod +x scripts/*.sh
+./scripts/install_et_lance.sh
+
+# Variante webapp locale + LLM
+./scripts/install_et_lance.sh --webapp-locale
+
+# Arrêt complet
+./scripts/arrete_environnement.sh
+```
+
+### Jupyter seul (sans Docker / webapp / pipeline)
+
+```bash
+./scripts/lance_notebook.sh
+# ou ouvrir directement le journal :
+./scripts/lance_notebook.sh --open
+
+./scripts/arrete_notebook.sh   # arrêt Jupyter uniquement
+```
+
+Crée automatiquement `.venv` + deps si absents (Python 3.13 recommandé).
+
+À la fin du lancement, le terminal affiche les liens cliquables vers :
+- le **journal de bord** Jupyter
+- le **sommaire** du cahier
+- la webapp (`/cisia`, `/soignant`) — sauf en mode `lance_notebook.sh`
+
+```bash
+# Ou manuellement (si déjà installé)
 python3.13 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-
-# Docker + Jupyter + Webapp
-chmod +x scripts/lance_environnement.sh scripts/arrete_environnement.sh
 ./scripts/lance_environnement.sh
-
-# Webapp locale avec LLM (au lieu de Docker sur le port 8000)
-./scripts/lance_environnement.sh --webapp-locale
-
-# Arrêt complet
-./scripts/arrete_environnement.sh
 ```
 
 | Service | URL |
@@ -38,7 +63,7 @@ Comptes démo : `demo@cisia.fr` / `Readmit2026` · `admin@cisia.fr` / `Admin2026
 
 ```mermaid
 flowchart TB
-    subgraph sources [Sources CSV racine]
+    subgraph sources [Sources CSV donnees/ immuable]
         P[patients.csv]
         S[sejours.csv]
         SV[signes_vitaux.csv]
@@ -346,4 +371,4 @@ cp .env.example .env
 
 ## Fichiers hors git
 
-CSV sources à la racine · `data/raw`, `data/vault_identite`, `data/curated` · `models/*.joblib`, `models/gguf/` · `.env` · `.run/` (PIDs lance_environnement)
+CSV sources dans `donnees/` (immuables) · copie travail `data/raw` → `data/curated` · `models/*.joblib`, `models/gguf/` · `.env` · `.run/` (PIDs lance_environnement)

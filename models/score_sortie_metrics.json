@@ -4,16 +4,20 @@
   "n_val": 68,
   "n_test": 72,
   "retenu": "random_forest",
+  "meilleur_benchmark": "random_forest",
+  "production_lock": true,
   "ranking_test_pr_auc": [
     "random_forest",
-    "lightgbm",
     "logistic",
+    "lightgbm",
+    "hist_gradient_boosting",
     "mlp",
     "reference"
   ],
   "optuna": true,
   "calibrated": true,
-  "justification_algo": "Splits patient-level identiques pour tous les modèles. Seuil F2 max sur validation. Classement final sur PR-AUC test. Modèles tunables (RF, LightGBM, MLP) : Optuna sur PR-AUC validation.",
+  "seuil_production_calibré": 0.25,
+  "justification_algo": "Splits patient-level identiques pour tous les modèles. Seuil F2 max sur validation. Classement final sur PR-AUC test. Modèles tunables (RF, LightGBM, MLP) : Optuna sur PR-AUC validation. Production figée : `random_forest` (contrat hôpital / SHAP / sklearn) ; meilleur PR-AUC benchmark = `random_forest`.",
   "reference": {
     "modele": "reference",
     "label": "Référence (prévalence train)",
@@ -42,22 +46,22 @@
     "modele": "logistic",
     "label": "Régression logistique",
     "val": {
-      "roc_auc": 0.7735247208931418,
-      "pr_auc": 0.4777470339427937,
-      "precision": 0.3125,
+      "roc_auc": 0.7894736842105263,
+      "pr_auc": 0.49191118569407233,
+      "precision": 0.29411764705882354,
       "recall": 0.9090909090909091,
-      "f2": 0.6578947368421053,
-      "threshold": 0.15,
+      "f2": 0.6410256410256411,
+      "threshold": 0.125,
       "n": 68,
       "prevalence": 0.16176470588235295
     },
     "test": {
-      "roc_auc": 0.8091517857142858,
-      "pr_auc": 0.4987662819989857,
-      "precision": 0.358974358974359,
-      "recall": 0.875,
-      "f2": 0.6796116504854369,
-      "threshold": 0.15,
+      "roc_auc": 0.7912946428571429,
+      "pr_auc": 0.5445027880033132,
+      "precision": 0.34210526315789475,
+      "recall": 0.8125,
+      "f2": 0.6372549019607843,
+      "threshold": 0.125,
       "n": 72,
       "prevalence": 0.2222222222222222
     }
@@ -66,93 +70,124 @@
     "modele": "random_forest",
     "label": "Forêt aléatoire",
     "val": {
-      "roc_auc": 0.8261562998405104,
-      "pr_auc": 0.5368366681165725,
-      "precision": 0.4090909090909091,
+      "roc_auc": 0.861244019138756,
+      "pr_auc": 0.6497612681436211,
+      "precision": 0.5,
       "recall": 0.8181818181818182,
-      "f2": 0.6818181818181818,
-      "threshold": 0.42499999999999993,
+      "f2": 0.7258064516129032,
+      "threshold": 0.475,
       "n": 68,
       "prevalence": 0.16176470588235295
     },
     "test": {
-      "roc_auc": 0.8638392857142857,
-      "pr_auc": 0.6112020060156028,
+      "roc_auc": 0.8549107142857142,
+      "pr_auc": 0.5835724938014182,
       "precision": 0.5,
-      "recall": 0.875,
-      "f2": 0.7608695652173914,
-      "threshold": 0.42499999999999993,
+      "recall": 0.8125,
+      "f2": 0.7222222222222222,
+      "threshold": 0.475,
       "n": 72,
       "prevalence": 0.2222222222222222
     },
     "optuna_params": {
-      "n_estimators": 240,
-      "max_depth": 10,
-      "min_samples_leaf": 11
+      "n_estimators": 140,
+      "max_depth": 12,
+      "min_samples_leaf": 19
     }
   },
   "mlp": {
     "modele": "mlp",
     "label": "MLP (réseau de neurones)",
     "val": {
-      "roc_auc": 0.7400318979266348,
-      "pr_auc": 0.598785598155346,
-      "precision": 0.8571428571428571,
-      "recall": 0.5454545454545454,
-      "f2": 0.5882352941176471,
-      "threshold": 0.27499999999999997,
+      "roc_auc": 0.8708133971291866,
+      "pr_auc": 0.6234997202846427,
+      "precision": 0.5714285714285714,
+      "recall": 0.7272727272727273,
+      "f2": 0.6896551724137931,
+      "threshold": 0.25,
       "n": 68,
       "prevalence": 0.16176470588235295
     },
     "test": {
-      "roc_auc": 0.5758928571428571,
-      "pr_auc": 0.33737687652029436,
-      "precision": 0.2857142857142857,
-      "recall": 0.25,
-      "f2": 0.2564102564102564,
-      "threshold": 0.27499999999999997,
+      "roc_auc": 0.7131696428571428,
+      "pr_auc": 0.37433767828082526,
+      "precision": 0.3,
+      "recall": 0.1875,
+      "f2": 0.20270270270270271,
+      "threshold": 0.25,
       "n": 72,
       "prevalence": 0.2222222222222222
     },
     "optuna_params": {
       "hidden_layer_sizes": [
         112,
-        48
+        64
       ],
-      "alpha": 0.004445148274457075,
-      "learning_rate_init": 0.0005525844773629765
+      "alpha": 0.001806619649442355,
+      "learning_rate_init": 0.0012447457039810666
     }
   },
   "lightgbm": {
     "modele": "lightgbm",
     "label": "LightGBM",
     "val": {
-      "roc_auc": 0.7878787878787878,
-      "pr_auc": 0.4500312358705144,
-      "precision": 0.391304347826087,
+      "roc_auc": 0.8676236044657096,
+      "pr_auc": 0.6548550925072224,
+      "precision": 0.47368421052631576,
       "recall": 0.8181818181818182,
-      "f2": 0.6716417910447762,
-      "threshold": 0.3,
+      "f2": 0.7142857142857143,
+      "threshold": 0.525,
       "n": 68,
       "prevalence": 0.16176470588235295
     },
     "test": {
-      "roc_auc": 0.8169642857142857,
-      "pr_auc": 0.5208243273212482,
-      "precision": 0.56,
+      "roc_auc": 0.8381696428571429,
+      "pr_auc": 0.5303211600238875,
+      "precision": 0.5384615384615384,
       "recall": 0.875,
-      "f2": 0.7865168539325843,
-      "threshold": 0.3,
+      "f2": 0.7777777777777778,
+      "threshold": 0.525,
       "n": 72,
       "prevalence": 0.2222222222222222
     },
     "optuna_params": {
-      "n_estimators": 160,
-      "max_depth": 6,
-      "learning_rate": 0.03242874107773976,
-      "subsample": 0.633748250497978,
-      "colsample_bytree": 0.6815386936424233,
-      "reg_lambda": 1.3566323239562184
+      "n_estimators": 140,
+      "max_depth": 8,
+      "learning_rate": 0.0202186393742416,
+      "subsample": 0.884573310569708,
+      "colsample_bytree": 0.9588234303326488,
+      "reg_lambda": 2.918375494533064
+    }
+  },
+  "hist_gradient_boosting": {
+    "modele": "hist_gradient_boosting",
+    "label": "Gradient boosting (HistGB)",
+    "val": {
+      "roc_auc": 0.8261562998405104,
+      "pr_auc": 0.5637336700107598,
+      "precision": 0.47368421052631576,
+      "recall": 0.8181818181818182,
+      "f2": 0.7142857142857143,
+      "threshold": 0.475,
+      "n": 68,
+      "prevalence": 0.16176470588235295
+    },
+    "test": {
+      "roc_auc": 0.8392857142857143,
+      "pr_auc": 0.48462188513103843,
+      "precision": 0.5,
+      "recall": 0.75,
+      "f2": 0.6818181818181818,
+      "threshold": 0.475,
+      "n": 72,
+      "prevalence": 0.2222222222222222
+    },
+    "optuna_params": {
+      "max_depth": 3,
+      "max_iter": 120,
+      "learning_rate": 0.02089931260668728,
+      "min_samples_leaf": 40,
+      "l2_regularization": 0.3171768263180248
     }
   }
 }

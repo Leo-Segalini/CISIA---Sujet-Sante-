@@ -53,7 +53,7 @@ from src.data.territoire import write_complements
 
 
 def step_copy_raw(ctx: PipelineContext) -> None:
-    """Copie les CSV déclarés (SOURCES) vers data/raw."""
+    """Copie les CSV déclarés (SOURCES dans donnees/) vers data/raw."""
     ctx.artifacts.update(
         {f"raw:{k}": v for k, v in copy_sources_to_raw(ctx.paths).items()}
     )
@@ -171,7 +171,7 @@ def _default_steps() -> list[PipelineStep]:
         PipelineStep(
             id="copy_raw",
             title="Copie des sources CSV",
-            description="SOURCES → data/raw (liste déclarative)",
+            description="donnees/ → data/raw (copie ; sources intactes)",
             run=step_copy_raw,
             phase="ingest",
         ),

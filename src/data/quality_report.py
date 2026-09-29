@@ -146,7 +146,11 @@ def _dates_hors_sejour(
     dates = pd.to_datetime(merged[date_col], errors="coerce")
     adm = pd.to_datetime(merged["DateAdmission"], errors="coerce")
     sortie = pd.to_datetime(merged["DateSortie"], errors="coerce")
-    return dates.isna() | dates.lt(adm) | dates.gt(sortie)
+    # Événements souvent en date seule (00:00) : comparer au jour calendaire
+    d_day = dates.dt.normalize()
+    a_day = adm.dt.normalize()
+    s_day = sortie.dt.normalize()
+    return dates.isna() | d_day.lt(a_day) | d_day.gt(s_day)
 
 
 def aberrant_rates(name: str, df: pd.DataFrame) -> dict[str, float]:

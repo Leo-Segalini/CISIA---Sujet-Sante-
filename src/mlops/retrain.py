@@ -19,7 +19,6 @@ from src.mlops.fhir_client import FhirConfig, ingest_fhir_patient
 from src.mlops.registry import register_version
 from src.model.bias import bias_table
 from src.model.benchmark import run_benchmark
-from src.model.deploy import train_score
 from src.model.explain import shap_top_features
 from src.model.prepare import by_split, split_xy
 from src.model.inference import predict_proba, threshold_for
@@ -105,6 +104,9 @@ def run_full_retrain(
         for score_name in ("score_sortie", "score_tele"):
             parquet = paths.curated / f"features_{score_name}.parquet"
             features = pd.read_parquet(parquet)
+            # Import local : évite le cycle deploy → mlops.__init__ → retrain → deploy
+            from src.model.deploy import train_score
+
             metrics = train_score(
                 features,
                 score_name=score_name,
@@ -157,10 +159,16 @@ def ingest_fhir_and_append(
     new_rows = ingest_fhir_patient(patient_id, config=cfg)
     if new_rows.empty:
         return {"ingested": 0, "message": "Aucun séjour FHIR"}
-    sejours_path = paths.csv_sources / "sejours.csv"
+    sejours_path = paths.raw / "sejours.csv"
+    paths.ensure_data_dirs()
+    if not sejours_path.exists():
+        from src.data.load import copy_sources_to_raw
+
+        copy_sources_to_raw(paths)
     existing = pd.read_csv(sejours_path)
     merged = pd.concat([existing, new_rows], ignore_index=True)
     merged.drop_duplicates(subset=["SejourID"], keep="last", inplace=True)
+    # Écrit uniquement dans data/raw — jamais dans donnees/ (sources immuables)
     merged.to_csv(sejours_path, index=False)
     return {
         "ingested": int(len(new_rows)),

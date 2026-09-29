@@ -12,30 +12,21 @@ services:
       WEBAPP_HOST: 0.0.0.0
       WEBAPP_PORT: 8000
       CISIA_LLM: ${CISIA_LLM:-0}
-      RETRAIN_OPTUNA: ${RETRAIN_OPTUNA:-1}
+      RETRAIN_OPTUNA: ${RETRAIN_OPTUNA:-0}
       OPTUNA_TRIALS: ${OPTUNA_TRIALS:-25}
     volumes:
+      # Sources immuables (lecture seule) + données de travail (raw/curated/models)
+      - ./donnees:/app/donnees:ro
       - ./data:/app/data
       - ./models:/app/models
-      - ./patients.csv:/app/patients.csv:ro
-      - ./sejours.csv:/app/sejours.csv
-      - ./historique.csv:/app/historique.csv:ro
-      - ./diagnostics.csv:/app/diagnostics.csv:ro
-      - ./actes.csv:/app/actes.csv:ro
-      - ./biologies.csv:/app/biologies.csv:ro
-      - ./signes_vitaux.csv:/app/signes_vitaux.csv:ro
-      - ./medications.csv:/app/medications.csv:ro
-      - ./comptes_rendus.csv:/app/comptes_rendus.csv:ro
-      - ./objets_connectes.csv:/app/objets_connectes.csv:ro
-      - ./territoire_insee.csv:/app/territoire_insee.csv:ro
       - ./docs/registres:/app/docs/registres:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8000/api/health"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 180s
+      retries: 20
+      start_period: 600s
 
   retrain:
     image: cisia-api:latest
@@ -48,22 +39,12 @@ services:
       PYTHONPATH: /app
       WEBAPP_INTERNAL_URL: http://webapp:8000
       RETRAIN_INTERVAL_SECONDS: ${RETRAIN_INTERVAL_SECONDS:-86400}
-      RETRAIN_OPTUNA: ${RETRAIN_OPTUNA:-1}
+      RETRAIN_OPTUNA: ${RETRAIN_OPTUNA:-0}
       OPTUNA_TRIALS: ${OPTUNA_TRIALS:-25}
     volumes:
+      - ./donnees:/app/donnees:ro
       - ./data:/app/data
       - ./models:/app/models
-      - ./patients.csv:/app/patients.csv:ro
-      - ./sejours.csv:/app/sejours.csv
-      - ./historique.csv:/app/historique.csv:ro
-      - ./diagnostics.csv:/app/diagnostics.csv:ro
-      - ./actes.csv:/app/actes.csv:ro
-      - ./biologies.csv:/app/biologies.csv:ro
-      - ./signes_vitaux.csv:/app/signes_vitaux.csv:ro
-      - ./medications.csv:/app/medications.csv:ro
-      - ./comptes_rendus.csv:/app/comptes_rendus.csv:ro
-      - ./objets_connectes.csv:/app/objets_connectes.csv:ro
-      - ./territoire_insee.csv:/app/territoire_insee.csv:ro
       - ./docs/registres:/app/docs/registres:ro
     depends_on:
       webapp:
