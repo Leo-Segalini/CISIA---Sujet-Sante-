@@ -28,11 +28,11 @@ temp/
 *.bak
 *.orig
 
-# --- Couverture / build Python ---
+# --- Archives de rendu / build local ---
+dist/
 htmlcov/
 .coverage
 coverage.xml
-dist/
 build/
 *.egg-info/
 *.egg

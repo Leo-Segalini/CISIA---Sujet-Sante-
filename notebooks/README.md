@@ -13,16 +13,24 @@ source .venv/bin/activate
 jupyter notebook notebooks/ --ip=127.0.0.1 --port=8888
 ```
 
-Ouvrez **http://127.0.0.1:8888/tree** puis **parcours jury DS** :
+Ouvrez **http://127.0.0.1:8888/tree** — le dossier `notebooks/` **est le cahier électronique CIF**.
 
-0. `00_guide/01_cadre_projet.ipynb` — objectifs, cadre RGPD, cohorte
-1. `01_donnees/01_inventaire_sources.ipynb` — CSV → DataFrames → colonnes
-2. `01_donnees/05_analyse_donnees.ipynb` — nulls, dates hors séjour, patho↔retour
-3. `02_modeles/02_nettoyage_donnees.ipynb` — nettoyage
-4. `02_modeles/03_preparation_modele.ipynb` — features sortie + télé
-5. `02_modeles/04_entrainement_modele.ipynb` — Optuna × 2 scores (30–60 min)
-6. `02_modeles/05_lancement_modele.ipynb` — inférence
-7. `02_modeles/06_reponse_modele.ipynb` — explication / réponse modèle
+| Livrable CIF | Où |
+|--------------|-----|
+| Journal de bord (méthode & choix) | `00_guide/02_journal_de_bord.ipynb` |
+| Production écrite (données + modèles) | parcours `01_donnees/` → `02_modeles/` |
+
+Parcours conseillé :
+
+0. `00_guide/02_journal_de_bord.ipynb` — **journal de bord**
+1. `00_guide/01_cadre_projet.ipynb` — objectifs, cadre RGPD, cohorte
+2. `01_donnees/01_inventaire_sources.ipynb` — CSV → DataFrames → colonnes
+3. `01_donnees/05_analyse_donnees.ipynb` — nulls, dates hors séjour, patho↔retour
+4. `02_modeles/02_nettoyage_donnees.ipynb` — nettoyage
+5. `02_modeles/03_preparation_modele.ipynb` — features sortie + télé
+6. `02_modeles/04_entrainement_modele.ipynb` — Optuna × 2 scores (30–60 min)
+7. `02_modeles/05_lancement_modele.ipynb` — inférence
+8. `02_modeles/06_reponse_modele.ipynb` — explication / réponse modèle
 
 > Si la page ne s’ouvre pas : regardez `.run/jupyter.log` ou relancez `./scripts/arrete_environnement.sh` puis `./scripts/lance_environnement.sh`.
 
@@ -35,7 +43,8 @@ notebooks/
 ├── README.md                          ← ce fichier
 ├── 00_guide/
 │   ├── 00_sommaire.ipynb              Index + parcours recommandé
-│   └── 01_cadre_projet.ipynb          Objectifs, cadre RGPD, cohorte
+│   ├── 01_cadre_projet.ipynb          Objectifs, cadre RGPD, cohorte
+│   └── 02_journal_de_bord.ipynb       ★ Journal méthode & choix (CIF)
 ├── 01_donnees/                        Pipeline & qualité
 │   ├── 01_inventaire_sources.ipynb    ★ Jury : CSV→DF→colonnes→analyses
 │   ├── 02_qualite_hallucinations.ipynb  ★ Trous, aberrations, incohérences + graphiques
