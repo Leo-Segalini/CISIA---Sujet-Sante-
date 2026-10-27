@@ -478,7 +478,7 @@ function renderFloor(floor, urgencesLues, index) {
   const stats = floorStats(floor);
   const meta =
     floor.medecin
-      ? "<span class='plan-etage-meta muted'>Médecin · " + floor.medecin + "</span>"
+      ? "<span class='plan-etage-meta'>Médecin · " + floor.medecin + "</span>"
       : "";
   const details = document.createElement("details");
   details.className = "plan-etage";

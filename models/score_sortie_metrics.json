@@ -8,16 +8,15 @@
   "production_lock": true,
   "ranking_test_pr_auc": [
     "random_forest",
-    "logistic",
     "lightgbm",
+    "logistic",
     "hist_gradient_boosting",
     "mlp",
     "reference"
   ],
   "optuna": true,
   "calibrated": true,
-  "seuil_production_calibré": 0.25,
-  "justification_algo": "Splits patient-level identiques pour tous les modèles. Seuil F2 max sur validation. Classement final sur PR-AUC test. Modèles tunables (RF, LightGBM, MLP) : Optuna sur PR-AUC validation. Production figée : `random_forest` (contrat hôpital / SHAP / sklearn) ; meilleur PR-AUC benchmark = `random_forest`.",
+  "justification_algo": "Splits patient-level identiques pour tous les modèles. Seuil F2 max sur validation. Classement final sur PR-AUC test. Modèles tunables (RF, LightGBM, MLP) : Optuna sur PR-AUC validation. Production figée : `random_forest` (contrat hôpital / slides) ; meilleur PR-AUC benchmark = `random_forest`.",
   "reference": {
     "modele": "reference",
     "label": "Référence (prévalence train)",
@@ -70,8 +69,8 @@
     "modele": "random_forest",
     "label": "Forêt aléatoire",
     "val": {
-      "roc_auc": 0.861244019138756,
-      "pr_auc": 0.6497612681436211,
+      "roc_auc": 0.8628389154704944,
+      "pr_auc": 0.6687749564754912,
       "precision": 0.5,
       "recall": 0.8181818181818182,
       "f2": 0.7258064516129032,
@@ -80,8 +79,8 @@
       "prevalence": 0.16176470588235295
     },
     "test": {
-      "roc_auc": 0.8549107142857142,
-      "pr_auc": 0.5835724938014182,
+      "roc_auc": 0.8616071428571429,
+      "pr_auc": 0.6093998704341622,
       "precision": 0.5,
       "recall": 0.8125,
       "f2": 0.7222222222222222,
@@ -90,31 +89,63 @@
       "prevalence": 0.2222222222222222
     },
     "optuna_params": {
-      "n_estimators": 140,
-      "max_depth": 12,
+      "n_estimators": 100,
+      "max_depth": 11,
       "min_samples_leaf": 19
+    }
+  },
+  "lightgbm": {
+    "modele": "lightgbm",
+    "label": "LightGBM",
+    "val": {
+      "roc_auc": 0.8835725677830941,
+      "pr_auc": 0.6471861471861472,
+      "precision": 0.37037037037037035,
+      "recall": 0.9090909090909091,
+      "f2": 0.704225352112676,
+      "threshold": 0.3,
+      "n": 68,
+      "prevalence": 0.16176470588235295
+    },
+    "test": {
+      "roc_auc": 0.8537946428571429,
+      "pr_auc": 0.579132245069745,
+      "precision": 0.45454545454545453,
+      "recall": 0.9375,
+      "f2": 0.7731958762886598,
+      "threshold": 0.3,
+      "n": 72,
+      "prevalence": 0.2222222222222222
+    },
+    "optuna_params": {
+      "n_estimators": 100,
+      "max_depth": 8,
+      "learning_rate": 0.020230417542572692,
+      "subsample": 0.8005322818491951,
+      "colsample_bytree": 0.9886595523271267,
+      "reg_lambda": 0.24834150262739105
     }
   },
   "mlp": {
     "modele": "mlp",
     "label": "MLP (réseau de neurones)",
     "val": {
-      "roc_auc": 0.8708133971291866,
-      "pr_auc": 0.6234997202846427,
-      "precision": 0.5714285714285714,
+      "roc_auc": 0.8740031897926634,
+      "pr_auc": 0.64140934822753,
+      "precision": 0.6666666666666666,
       "recall": 0.7272727272727273,
-      "f2": 0.6896551724137931,
-      "threshold": 0.25,
+      "f2": 0.7142857142857143,
+      "threshold": 0.3,
       "n": 68,
       "prevalence": 0.16176470588235295
     },
     "test": {
-      "roc_auc": 0.7131696428571428,
-      "pr_auc": 0.37433767828082526,
-      "precision": 0.3,
+      "roc_auc": 0.7154017857142858,
+      "pr_auc": 0.3742483508258052,
+      "precision": 0.3333333333333333,
       "recall": 0.1875,
-      "f2": 0.20270270270270271,
-      "threshold": 0.25,
+      "f2": 0.2054794520547945,
+      "threshold": 0.3,
       "n": 72,
       "prevalence": 0.2222222222222222
     },
@@ -123,71 +154,39 @@
         112,
         64
       ],
-      "alpha": 0.001806619649442355,
-      "learning_rate_init": 0.0012447457039810666
-    }
-  },
-  "lightgbm": {
-    "modele": "lightgbm",
-    "label": "LightGBM",
-    "val": {
-      "roc_auc": 0.8676236044657096,
-      "pr_auc": 0.6548550925072224,
-      "precision": 0.47368421052631576,
-      "recall": 0.8181818181818182,
-      "f2": 0.7142857142857143,
-      "threshold": 0.525,
-      "n": 68,
-      "prevalence": 0.16176470588235295
-    },
-    "test": {
-      "roc_auc": 0.8381696428571429,
-      "pr_auc": 0.5303211600238875,
-      "precision": 0.5384615384615384,
-      "recall": 0.875,
-      "f2": 0.7777777777777778,
-      "threshold": 0.525,
-      "n": 72,
-      "prevalence": 0.2222222222222222
-    },
-    "optuna_params": {
-      "n_estimators": 140,
-      "max_depth": 8,
-      "learning_rate": 0.0202186393742416,
-      "subsample": 0.884573310569708,
-      "colsample_bytree": 0.9588234303326488,
-      "reg_lambda": 2.918375494533064
+      "alpha": 0.0003233339368021421,
+      "learning_rate_init": 0.0008713433260389047
     }
   },
   "hist_gradient_boosting": {
     "modele": "hist_gradient_boosting",
     "label": "Gradient boosting (HistGB)",
     "val": {
-      "roc_auc": 0.8261562998405104,
-      "pr_auc": 0.5637336700107598,
+      "roc_auc": 0.8229665071770336,
+      "pr_auc": 0.5465319635176095,
       "precision": 0.47368421052631576,
       "recall": 0.8181818181818182,
       "f2": 0.7142857142857143,
-      "threshold": 0.475,
+      "threshold": 0.44999999999999996,
       "n": 68,
       "prevalence": 0.16176470588235295
     },
     "test": {
-      "roc_auc": 0.8392857142857143,
-      "pr_auc": 0.48462188513103843,
+      "roc_auc": 0.828125,
+      "pr_auc": 0.5081481357375867,
       "precision": 0.5,
       "recall": 0.75,
       "f2": 0.6818181818181818,
-      "threshold": 0.475,
+      "threshold": 0.44999999999999996,
       "n": 72,
       "prevalence": 0.2222222222222222
     },
     "optuna_params": {
-      "max_depth": 3,
-      "max_iter": 120,
-      "learning_rate": 0.02089931260668728,
-      "min_samples_leaf": 40,
-      "l2_regularization": 0.3171768263180248
+      "max_depth": 7,
+      "max_iter": 100,
+      "learning_rate": 0.03505800715348904,
+      "min_samples_leaf": 18,
+      "l2_regularization": 2.9153670867010595
     }
   }
 }

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Régénère documentation/assets/comparaison_modeles_rf.png depuis score_sortie_metrics.json.
 
-Palette d’origine (#5b8def / #3dcfb0), fond transparent.
-Annotations : RETENU prod + éventuellement 1ᵉʳ PR-AUC / meilleur F2.
+Fond transparent, libellés vulgarisés (PR-AUC / F2 expliqués en clair).
 """
 
 from __future__ import annotations
@@ -27,12 +26,15 @@ ORDER = [
     "random_forest",
 ]
 
-# Palette d’origine (barres) + noir pour texte / flèches / légende (fond transparent)
 COLOR_PR = "#5b8def"
 COLOR_F2 = "#3dcfb0"
 COLOR_INK = "#000000"
 COLOR_GRID = "#5a6a7e"
 COLOR_SPINE = "#3a4a5e"
+
+# Libellés vulgarisés (technique entre parenthèses pour le jury)
+LABEL_PR = "Qualité de classement du risque\n(PR-AUC — critère de choix)"
+LABEL_F2 = "Ne pas rater les réadmissions\n(F2 — calage du seuil d'alerte)"
 
 
 def main() -> None:
@@ -65,7 +67,7 @@ def main() -> None:
     x = np.arange(len(labels))
     width = 0.36
 
-    fig, ax = plt.subplots(figsize=(12.0, 5.6), dpi=160)
+    fig, ax = plt.subplots(figsize=(12.4, 6.0), dpi=160)
     fig.patch.set_alpha(0.0)
     ax.patch.set_alpha(0.0)
 
@@ -73,7 +75,7 @@ def main() -> None:
         x - width / 2,
         pr,
         width,
-        label="PR-AUC test (critère de choix)",
+        label=LABEL_PR,
         color=COLOR_PR,
         zorder=3,
     )
@@ -81,7 +83,7 @@ def main() -> None:
         x + width / 2,
         f2,
         width,
-        label="F2 test (seuil calé sur validation)",
+        label=LABEL_F2,
         color=COLOR_F2,
         zorder=3,
     )
@@ -100,8 +102,8 @@ def main() -> None:
                 fontweight="bold",
             )
 
-    ax.set_ylabel("Score (0–1)", color=COLOR_INK, fontsize=11)
-    ax.set_ylim(0, 1.08)
+    ax.set_ylabel("Score de 0 (faible) à 1 (fort)", color=COLOR_INK, fontsize=11)
+    ax.set_ylim(0, 1.12)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, color=COLOR_INK, fontsize=8.5, rotation=15, ha="right")
     ax.tick_params(axis="y", colors=COLOR_INK)
@@ -116,23 +118,25 @@ def main() -> None:
         facecolor="white",
         edgecolor=COLOR_INK,
         labelcolor=COLOR_INK,
-        fontsize=9,
+        fontsize=8.5,
     )
-    leg.get_frame().set_alpha(0.92)
+    leg.get_frame().set_alpha(0.95)
 
     idx_retenu = keys_plot.index(retenu)
     idx_best = keys_plot.index(meilleur)
     bar_retenu = bars_pr[idx_retenu]
     same = retenu == meilleur
     label_retenu = (
-        "RETENU\nmeilleur PR-AUC" if same else "RETENU prod\n(RF figé)"
+        "CHOISI\nmeilleur classement"
+        if same
+        else "CHOISI en prod\n(forêt aléatoire)"
     )
     ax.annotate(
         label_retenu,
         xy=(bar_retenu.get_x() + bar_retenu.get_width() / 2, bar_retenu.get_height()),
         xytext=(
-            bar_retenu.get_x() + bar_retenu.get_width() / 2 + 0.85,
-            min(0.95, bar_retenu.get_height() + 0.22),
+            bar_retenu.get_x() + bar_retenu.get_width() / 2 + 0.9,
+            min(1.0, bar_retenu.get_height() + 0.22),
         ),
         color=COLOR_INK,
         fontsize=9,
@@ -156,11 +160,11 @@ def main() -> None:
     if not same:
         bar_best = bars_pr[idx_best]
         ax.annotate(
-            "1ᵉʳ PR-AUC\n(benchmark)",
+            "1ᵉʳ au classement\n(benchmark)",
             xy=(bar_best.get_x() + bar_best.get_width() / 2, bar_best.get_height()),
             xytext=(
-                bar_best.get_x() + bar_best.get_width() / 2 - 0.85,
-                min(0.95, bar_best.get_height() + 0.22),
+                bar_best.get_x() + bar_best.get_width() / 2 - 0.9,
+                min(1.0, bar_best.get_height() + 0.22),
             ),
             color=COLOR_INK,
             fontsize=9,
@@ -186,11 +190,11 @@ def main() -> None:
         if f2[idx_lgb] >= max(f2) - 1e-9 and idx_lgb != idx_retenu:
             bar_f = bars_f2[idx_lgb]
             ax.annotate(
-                "meilleur F2\n≠ critère prod",
+                "meilleur pour\nne pas rater\n≠ critère de choix",
                 xy=(bar_f.get_x() + bar_f.get_width() / 2, bar_f.get_height()),
                 xytext=(
-                    bar_f.get_x() + bar_f.get_width() / 2 - 0.9,
-                    min(1.0, bar_f.get_height() + 0.18),
+                    bar_f.get_x() + bar_f.get_width() / 2 - 0.95,
+                    min(1.05, bar_f.get_height() + 0.20),
                 ),
                 color=COLOR_INK,
                 fontsize=8.5,
@@ -212,12 +216,14 @@ def main() -> None:
             )
 
     delta = pr[idx_best] - pr[idx_retenu]
+    retenu_label = data.get(retenu, {}).get("label", retenu)
     ax.set_title(
-        f"Score sortie — comparaison modèles (retenu : {data.get(retenu, {}).get('label', retenu)})",
+        f"Score sortie — quel modèle classe le mieux le risque ?\n"
+        f"(modèle retenu : {retenu_label})",
         color=COLOR_INK,
         fontsize=12,
         fontweight="bold",
-        pad=12,
+        pad=14,
     )
     fig.tight_layout()
     OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -231,7 +237,7 @@ def main() -> None:
     plt.close(fig)
     print(
         f"écrit {OUT} (retenu_prod={retenu}, meilleur_pr_auc={meilleur}, "
-        f"ecart={delta:+.4f}, fond=transparent)"
+        f"ecart={delta:+.4f}, fond=transparent, libellés vulgarisés)"
     )
 
 

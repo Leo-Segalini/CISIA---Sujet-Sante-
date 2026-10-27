@@ -4,35 +4,189 @@
   "n_val": 68,
   "n_test": 72,
   "retenu": "logistic",
-  "production": true,
-  "calibrated": true,
-  "calibrated_method": "sigmoid_prefit_val",
+  "meilleur_benchmark": "logistic",
+  "production_lock": true,
   "ranking_test_pr_auc": [
-    "logistic"
+    "logistic",
+    "random_forest",
+    "lightgbm",
+    "hist_gradient_boosting",
+    "mlp",
+    "reference"
   ],
-  "justification_algo": "Production hôpital : logistic figé, hold-out patient, calibration sigmoid sur validation, seuil F2 val.",
+  "optuna": true,
+  "calibrated": true,
+  "justification_algo": "Splits patient-level identiques pour tous les modèles. Seuil F2 max sur validation. Classement final sur PR-AUC test. Modèles tunables (RF, LightGBM, MLP) : Optuna sur PR-AUC validation. Production figée : `logistic` (contrat hôpital / slides) ; meilleur PR-AUC benchmark = `logistic`.",
+  "reference": {
+    "modele": "reference",
+    "label": "Référence (prévalence train)",
+    "val": {
+      "roc_auc": 0.5,
+      "pr_auc": 0.16176470588235295,
+      "precision": 0.16176470588235295,
+      "recall": 1.0,
+      "f2": 0.49107142857142855,
+      "threshold": 0.05,
+      "n": 68,
+      "prevalence": 0.16176470588235295
+    },
+    "test": {
+      "roc_auc": 0.5,
+      "pr_auc": 0.2222222222222222,
+      "precision": 0.2222222222222222,
+      "recall": 1.0,
+      "f2": 0.5882352941176471,
+      "threshold": 0.05,
+      "n": 72,
+      "prevalence": 0.2222222222222222
+    }
+  },
   "logistic": {
     "modele": "logistic",
-    "label": "logistic",
+    "label": "Régression logistique",
     "val": {
       "roc_auc": 0.8038277511961722,
       "pr_auc": 0.5140758762768333,
-      "precision": 0.34615384615384615,
-      "recall": 0.8181818181818182,
-      "f2": 0.6428571428571429,
-      "threshold": 0.15,
+      "precision": 0.35714285714285715,
+      "recall": 0.9090909090909091,
+      "f2": 0.6944444444444444,
+      "threshold": 0.175,
       "n": 68,
       "prevalence": 0.16176470588235295
     },
     "test": {
       "roc_auc": 0.8046875,
       "pr_auc": 0.5823846463283282,
-      "precision": 0.42857142857142855,
+      "precision": 0.41379310344827586,
       "recall": 0.75,
-      "f2": 0.6521739130434783,
+      "f2": 0.6451612903225806,
+      "threshold": 0.175,
+      "n": 72,
+      "prevalence": 0.2222222222222222
+    }
+  },
+  "random_forest": {
+    "modele": "random_forest",
+    "label": "Forêt aléatoire",
+    "val": {
+      "roc_auc": 0.8628389154704945,
+      "pr_auc": 0.6666101356503834,
+      "precision": 0.45,
+      "recall": 0.8181818181818182,
+      "f2": 0.703125,
+      "threshold": 0.475,
+      "n": 68,
+      "prevalence": 0.16176470588235295
+    },
+    "test": {
+      "roc_auc": 0.84375,
+      "pr_auc": 0.5762618457930957,
+      "precision": 0.48148148148148145,
+      "recall": 0.8125,
+      "f2": 0.7142857142857143,
+      "threshold": 0.475,
+      "n": 72,
+      "prevalence": 0.2222222222222222
+    },
+    "optuna_params": {
+      "n_estimators": 260,
+      "max_depth": 4,
+      "min_samples_leaf": 24
+    }
+  },
+  "mlp": {
+    "modele": "mlp",
+    "label": "MLP (réseau de neurones)",
+    "val": {
+      "roc_auc": 0.8500797448165869,
+      "pr_auc": 0.5874242424242424,
+      "precision": 0.3142857142857143,
+      "recall": 1.0,
+      "f2": 0.6962025316455697,
+      "threshold": 0.15,
+      "n": 68,
+      "prevalence": 0.16176470588235295
+    },
+    "test": {
+      "roc_auc": 0.6484375,
+      "pr_auc": 0.3633860308075514,
+      "precision": 0.30952380952380953,
+      "recall": 0.8125,
+      "f2": 0.6132075471698113,
       "threshold": 0.15,
       "n": 72,
       "prevalence": 0.2222222222222222
+    },
+    "optuna_params": {
+      "hidden_layer_sizes": [
+        80,
+        64
+      ],
+      "alpha": 2.79561052566772e-05,
+      "learning_rate_init": 0.004897498668646123
+    }
+  },
+  "lightgbm": {
+    "modele": "lightgbm",
+    "label": "LightGBM",
+    "val": {
+      "roc_auc": 0.8708133971291866,
+      "pr_auc": 0.6274541475840177,
+      "precision": 0.6,
+      "recall": 0.8181818181818182,
+      "f2": 0.7627118644067796,
+      "threshold": 0.475,
+      "n": 68,
+      "prevalence": 0.16176470588235295
+    },
+    "test": {
+      "roc_auc": 0.8549107142857143,
+      "pr_auc": 0.5702683882480954,
+      "precision": 0.4782608695652174,
+      "recall": 0.6875,
+      "f2": 0.632183908045977,
+      "threshold": 0.475,
+      "n": 72,
+      "prevalence": 0.2222222222222222
+    },
+    "optuna_params": {
+      "n_estimators": 120,
+      "max_depth": 5,
+      "learning_rate": 0.052769547627330764,
+      "subsample": 0.9510915252861765,
+      "colsample_bytree": 0.9469741959032464,
+      "reg_lambda": 0.644443455996993
+    }
+  },
+  "hist_gradient_boosting": {
+    "modele": "hist_gradient_boosting",
+    "label": "Gradient boosting (HistGB)",
+    "val": {
+      "roc_auc": 0.8213716108452951,
+      "pr_auc": 0.57553212427162,
+      "precision": 0.42857142857142855,
+      "recall": 0.8181818181818182,
+      "f2": 0.6923076923076923,
+      "threshold": 0.32499999999999996,
+      "n": 68,
+      "prevalence": 0.16176470588235295
+    },
+    "test": {
+      "roc_auc": 0.8404017857142857,
+      "pr_auc": 0.5020788855602375,
+      "precision": 0.48148148148148145,
+      "recall": 0.8125,
+      "f2": 0.7142857142857143,
+      "threshold": 0.32499999999999996,
+      "n": 72,
+      "prevalence": 0.2222222222222222
+    },
+    "optuna_params": {
+      "max_depth": 8,
+      "max_iter": 200,
+      "learning_rate": 0.0243417515098503,
+      "min_samples_leaf": 37,
+      "l2_regularization": 0.3815542390613844
     }
   }
 }
